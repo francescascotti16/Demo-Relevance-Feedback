@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <title>Visione Relevance Feedback</title>
+    <link rel="stylesheet" href="static/style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+</head>
+<body>
+    <div id="page">
+        <!-- Menu (Left Column) -->
+
+        <div id="menu">
+            
+
+            <div id="button-container" class="button-container" style="display:block;">
+                
+                    
+                <input type="text" id="query" name="query"  query-container input" placeholder="Enter your query here">
+                <button class="save-button" onclick="submitQuery()">Search</button>
+                
+            <div id="loading" style="display:none;">
+                <div class="spinner"></div>
+            </div>
+                <select id="algorithm-select" class="dropbtn">
+                    <option disabled selected>Select Algorithm</option>
+                    <option value="Rocchio">Rocchio</option>
+                    <option value="PicHunter-star">PicHunter-star</option>
+                    <option value="SVM">SVM</option>
+                    <option value="Polyadic-SED">Polyadic-SED</option>
+                    <option value="Polyadic-MSED">Polyadic-MSED</option>
+                    <option value="PicHunter">PicHunter</option>
+                </select>
+                <button onclick="saveAndUpdate()" class="save-button">Update Results</button>
+                <div id="images-container" class="images-container">
+                    <!-- Liked Images -->
+                    <div id="liked-images-container">
+                        <h3>
+                            Liked Images
+                            <svg width="72" height="72" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path fill="green" d="M2 21h4V9H2v12zM22 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L13.17 1 7.59 6.59C7.22 6.95 7 7.45 7 8v11c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.15-.34.23-.7.23-1.07V10z"/>
+                            </svg>
+                        </h3>
+                        <div id="liked-images" class="positive-images-container"></div>
+                    </div>
+                
+                    <!-- Disliked Images -->
+                    <div id="disliked-images-container">
+                        <h4>
+                            Disliked Images
+                            <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path fill="red" d="M15 3H6c-.83 0-1.54.5-1.84 1.22L1.02 11.3c-.12.27-.19.57-.19.88V15c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L10.83 23l5.58-5.59c.37-.36.59-.86.59-1.41V5c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                        </h4>
+                        <div id="disliked-images" class="negative-images-container"></div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+            <!-- Contenitore per il tempo di ricerca -->
+            <div id="time-of-search" style="text-align: center; margin-top: 20px; font-weight: bold; font-size: 20px; color: #2196F3;">
+                <!-- Il tempo di ricerca apparirà qui -->
+            </div>
+        </div>
+    
+     
+    
+    
+        <!-- Content Section (Right Column) -->
+        <div id="content">
+            
+               
+                <div id="image-container"></div>
+                <div id="results"></div>
+                <div id="selected-results" class="hidden"></div>
+            
+        </div>
+    </div>
+
+    <script>
+       
+        let selectedImageURLs = {};
+        //let allImageURLs = {};
+        let relevantImages = [];
+        let nonRelevantImages = [];
+        let relevantImagestemp = [];
+        let nonRelevantImagestemp = [];
+       
+        
+        function submitQuery() {
+            
+            const loadingDiv = document.getElementById("loading");
+            loadingDiv.style.display = "block";
+        
+            const query = document.getElementById("query").value;
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = '';
+            const selectedResultsDiv = document.getElementById("selected-results");
+            selectedResultsDiv.innerHTML = '';
+            selectedResultsDiv.classList.add("hidden");
+            resultsDiv.classList.remove("hidden");
+            document.getElementById("liked-images").innerHTML = '';
+            document.getElementById("disliked-images").innerHTML = '';
+            document.getElementById("button-container").style.display = "block";
+        
+        //    allImageURLs = {};
+            relevantImages = [];
+            nonRelevantImages = [];
+            relevantImagestemp = [];
+            nonRelevantImagestemp = [];
+            selectedImageURLs = {}; 
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = "none";
+                const containerDiv = document.createElement("div");
+                containerDiv.className = "image-container";
+                resultsDiv.appendChild(containerDiv);
+        
+                data.image_urls.forEach((url, idx) => {
+                    createImageWithThumbs(containerDiv, url, data.img_ids[idx], false);
+                });
+            })
+            .catch(error => {
+                loadingDiv.style.display = "none";
+                console.error('Error:', error);
+            });
+        }
+
+            
+        
+        function createImageWithThumbs(containerDiv, url, id) { 
+            // Crea il contenitore per l'immagine e i pulsanti
+          
+            const imgDiv = document.createElement("div");
+            imgDiv.className = "image-item"; // Classe base per lo stile
+            
+          
+            const thumbsDiv = document.createElement("div");
+            thumbsDiv.className = "thumbs-buttons";
+            
+            // Pulsante "Thumbs Up"
+            const thumbsUpBtn = document.createElement("button");
+            thumbsUpBtn.className = "thumbs-up";
+
+            // Create the SVG element
+            const svgUp = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svgUp.setAttribute("width", "72");
+            svgUp.setAttribute("height", "72");
+            svgUp.setAttribute("viewBox", "0 0 24 24");
+
+            // Create the path element
+            const pathUp = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathUp.setAttribute("fill", "green");
+            pathUp.setAttribute("d", "M2 21h4V9H2v12zM22 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L13.17 1 7.59 6.59C7.22 6.95 7 7.45 7 8v11c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.15-.34.23-.7.23-1.07V10z");
+
+            // Append the path to the SVG
+            svgUp.appendChild(pathUp);
+
+            // Append the SVG to the button
+            thumbsUpBtn.appendChild(svgUp);
+
+            thumbsUpBtn.onclick = function() {
+                handleThumbsUp(url, id);
+            };
+
+                        
+            // Pulsante "Thumbs Down"
+            const thumbsDownBtn = document.createElement("button");
+            thumbsDownBtn.className = "thumbs-down";
+            // Create the SVG element
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "24");
+            svg.setAttribute("height", "24");
+            svg.setAttribute("viewBox", "0 0 24 24");
+
+            // Create the path element
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("fill", "red");
+            path.setAttribute("d", "M15 3H6c-.83 0-1.54.5-1.84 1.22L1.02 11.3c-.12.27-.19.57-.19.88V15c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L10.83 23l5.58-5.59c.37-.36.59-.86.59-1.41V5c0-1.1-.9-2-2-2z");
+
+            // Append the path to the SVG
+            svg.appendChild(path);
+
+            // Append the SVG to the button
+            thumbsDownBtn.appendChild(svg);
+
+            thumbsDownBtn.onclick = function() {
+                handleThumbsDown(url, id);
+            };
+            
+            thumbsDiv.appendChild(thumbsUpBtn);
+            thumbsDiv.appendChild(thumbsDownBtn);
+           
+            // Contenitore immagine e span
+            const span = document.createElement("span");
+            span.className = 'fancychecks';
+            
+            const img = document.createElement("img");
+            img.src = url;
+            img.id = "image_" + id;
+            // Classe per lo stileimg.className = "styled-image"; // Classe per lo stile
+            
+            // Aggiungi funzionalità di zoom
+            img.onclick = function() {
+                img.classList.toggle('zoomed2'); // Toggle per lo zoom
+            };
+           
+            span.appendChild(img);
+            imgDiv.appendChild(thumbsDiv);
+            imgDiv.appendChild(span);
+            containerDiv.appendChild(imgDiv);
+            // Now that the image is in the DOM, apply the border if needed.
+          
+            
+         //   allImageURLs[id] = url;
+
+            
+        }function addPositiveBorder(id) {
+            const span = document.getElementById('image_' + id).parentElement;
+            span.style.border = "5px solid green"; // Aggiunge bordo verde
+        }
+        
+        function addNegativeBorder(id) {
+            const span = document.getElementById('image_' + id).parentElement;
+            span.style.border = "5px solid red"; // Aggiunge bordo rosso
+        }
+        
+        function handleThumbsUp(url, id) {
+            const span = document.getElementById('image_' + id).parentElement;
+        
+            // Remove from the Disliked Images container if present
+            if (nonRelevantImages.includes(id)) {
+                removeFromNonRelevant(id);
+                removeImageFromContainer(id, "disliked-images");
+                addPositiveBorder(id);
+            }
+        
+            // Toggle in the Liked Images container
+            if (!relevantImages.includes(id)) {
+                relevantImages.push(id);
+                relevantImagestemp.push(id);
+                selectedImageURLs[id] = url;
+                addPositiveBorder(id);
+                addImageToContainer(url, id, "liked-images");
+            } else {
+                relevantImages = relevantImages.filter(imageId => imageId !== id);
+                relevantImagestemp = relevantImagestemp.filter(imageId => imageId !== id);
+                delete selectedImageURLs[id];
+                span.style.border = ""; // Rimuove il bordo verde
+                removeImageFromContainer(id, "liked-images");
+            }
+        }
+        
+        function handleThumbsDown(url, id) {
+            const span = document.getElementById('image_' + id).parentElement;
+        
+            // Remove from the Liked Images container if present
+            if (relevantImages.includes(id)) {
+                removeFromRelevant(id);
+                removeImageFromContainer(id, "liked-images");
+                addNegativeBorder(id);
+            }
+        
+            // Toggle in the Disliked Images container
+            if (!nonRelevantImages.includes(id)) {
+                nonRelevantImages.push(id);
+                nonRelevantImagestemp.push(id);
+                selectedImageURLs[id] = url;
+                addNegativeBorder(id);
+                addImageToContainer(url, id, "disliked-images");
+            } else {
+                nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
+                nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
+                delete selectedImageURLs[id];
+                span.style.border = ""; // Rimuove il bordo rosso
+                removeImageFromContainer(id, "disliked-images");
+            }
+        }
+        
+        
+        
+        
+        function addImageToContainer(url, id, containerId) {
+            const container = document.getElementById(containerId);
+            const img = document.createElement("img");
+            img.src = url;
+            img.id = `container-image-${id}`; // Unique ID for the image in the container
+            img.className = "styled-image";
+            container.appendChild(img);
+        }
+        
+        function removeImageFromContainer(id, containerId) {
+            const container = document.getElementById(containerId);
+            const img = document.getElementById(`container-image-${id}`);
+            
+            if (img) {
+                container.removeChild(img);
+            }
+        }
+        
+
+        function removeFromRelevant(id) {
+            const span = document.getElementById('image_' + id).parentElement;
+            relevantImages = relevantImages.filter(imageId => imageId !== id);
+            relevantImagestemp = relevantImagestemp.filter(imageId => imageId !== id);
+            delete selectedImageURLs[id];
+            
+            span.classList.remove("fancychecks_positive");
+           
+        }
+
+        function removeFromNonRelevant(id) {
+            const span = document.getElementById('image_' + id).parentElement;
+            nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
+            nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
+            delete selectedImageURLs[id];
+            span.classList.remove("fancychecks_negative");
+        }
+
+        function saveAndUpdate() {
+            const algorithmSelect = document.getElementById("algorithm-select");
+            const selectedAlgorithm = algorithmSelect.options[algorithmSelect.selectedIndex].text.toLowerCase();
+        
+            // Invia una richiesta POST all'endpoint '/save_and_update'
+            fetch('/save_and_update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    relevant_images_ids: relevantImages,
+                    non_relevant_images_ids: nonRelevantImages,
+                    relevant_images_ids_temp: relevantImagestemp,
+                    non_relevant_images_ids_temp: nonRelevantImagestemp,
+                    selected_algorithm: selectedAlgorithm,
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayUpdatedImages(data);
+        
+                    // Ottieni il tempo di ricerca dalla risposta
+                    let TimeOfSearch = data.total_time; // Assumi che 'total_time' sia la chiave corretta
+                    let selectedAlgorithm = data.selected_algorithm;
+                    // Aggiorna il contenitore del tempo di ricerca
+                    const timeElement = document.getElementById("time-of-search");
+                    if (TimeOfSearch) {
+                        timeElement.textContent = selectedAlgorithm +" Time: " + TimeOfSearch;
+                    } else {
+                        timeElement.textContent = "Time of Search is not available.";
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+                           
+            
+        
+        function displayUpdatedImages(data) {
+            // Remove the old results container from the DOM
+            const resultsDiv = document.getElementById("results");
+            if (resultsDiv) {
+                resultsDiv.parentNode.removeChild(resultsDiv);
+            }
+            
+            // Clear any existing content in the selected results container
+            const selectedDiv = document.getElementById("selected-results");
+            selectedDiv.innerHTML = '';
+        
+            // Create a new container div for the updated images
+            const containerDiv = document.createElement("div");
+            containerDiv.className = "image-container";
+            selectedDiv.appendChild(containerDiv);
+        
+            // Display new images
+            if (data.new_image_urls && data.new_image_urls.length > 0) {
+                data.new_image_urls.forEach((url, idx) => {
+                    // If necessary, pass an additional parameter (like a prefix) to create unique IDs
+                    createImageWithThumbs(containerDiv, url, data.new_image_ids[idx]);
+                });
+            }
+        
+            // Make the selected results container visible
+            selectedDiv.classList.remove("hidden");
+        }
+        
+            
+        function setSelectedAlgorithm(algorithm) {
+            localStorage.setItem('selectedAlgorithm', algorithm);
+        }
+
+        // Function to get the selected algorithm from local storage
+        function getSelectedAlgorithm() {
+            return localStorage.getItem('selectedAlgorithm');
+        }
+
+        
+    </script>
+</body>
+</html>

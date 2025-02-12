@@ -1,0 +1,661 @@
+/* Main Page Layout */
+#page {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+}
+
+.center {
+    width: 100%; /* Assicura che occupi tutto lo spazio */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra gli elementi orizzontalmente */
+    justify-content: center; /* Centra gli elementi verticalmente */
+    width: 25%;
+    background-color: #f4f4f4;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+}
+
+/* Content Area (Right Column) */
+#content {
+    width: 80%;
+    margin-left: 20%;  /* To make space for the fixed menu */
+   
+    background-color: #fff;
+    height: 100vh;  /* Ensure it takes full height */
+    overflow-y: auto;  /* Allow scrolling if content overflows */
+}
+
+
+h1 {
+    font-size: 15px; /* for the enter your query text */
+}
+
+
+/*-----------------------------------------------------------*/
+/* query container style */
+/*-----------------------------------------------------------*/
+#query-container button {
+    display: block;
+    width: calc(100% - 40px);
+    margin: 10px auto;
+    background-color: #2196F3;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: background-color 0.3s ease;
+}
+
+#query-container button:hover {
+    background-color: #1976D2;
+}
+
+
+#query-container {
+
+    text-align: center;
+    margin: 20px auto;
+    background: #f7f7f7;
+    padding: 20px;
+    border-radius: 3px;
+
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 90%;
+}
+
+input {
+    display: block;
+    width: calc(100% - 40px);
+    margin: 10px auto;
+    padding: 12px;
+    font-size: 20px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+/*-----------------------------------------------------------*/
+/* 
+/* Thumbs Up Button style */
+/*-----------------------------------------------------------*/
+
+/* Thumbs Up and Thumbs Down Buttons */
+.thumbs-up-button, .thumbs-down-button {
+    font-size: 15px;           /* Make the emoji larger */
+    background-color: transparent; /* No background */
+    border: none;              /* No border */
+    cursor: pointer;          /* Pointer cursor on hover */
+    margin-top: 15px;          /* Space between the "Save and Update" button and thumbs-up */
+    margin-left: 50px;
+    margin-right: 50px;            /* Reset any unwanted left margin */
+    text-align: center;        /* Align text (emoji) */
+}
+
+/* Thumbs Up/Down Button Hover Effect */
+.thumbs-up-button:hover, .thumbs-down-button:hover {
+    opacity: 0.7;  /* Slight transparency effect on hover */
+}
+
+
+/*-----------------------------------------------------------*/
+/* button container style */
+/*-----------------------------------------------------------*/
+.button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px; /* Corretto */
+    width: 100%;
+    max-width: 350px;
+    box-sizing: border-box;
+    padding: 20px;
+}
+
+/*-----------------------------------------------------------*/
+/* save and update button style */
+/*-----------------------------------------------------------*/
+.save-button {
+    background-color: #2196F3;
+    margin-right: 20px; 
+    margin-left: 20px ;
+    
+    padding: 15px;
+    width: 300px;
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.3s, background-color 0.3s;
+    /* center the button*/
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+
+}
+/*-----------------------------------------------------------*/
+/* drop down menu style */
+/*-----------------------------------------------------------*/
+
+.dropdown div {
+        color:  #2196F3
+    }
+    .dropdown-content a:hover {background-color: #f1f1f1}
+    
+.dropdown:hover .dropdown-content {
+        display: block;
+    }
+.dropbtn {
+        display: block;
+        width: calc(100% - 40px);
+        margin: 10px auto;
+        background-color: #2196F3;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 20px;
+        transition: background-color 0.3s ease;
+        background-color: #2196F3;
+        text-align: center; /* Ensure text alignment within the button */
+        width: 300px;
+        margin-bottom: 20px;
+        transition: transform 0.3s, background-color 0.3s;
+      
+        margin-left: auto;
+        margin-right: auto;
+        
+        }
+
+.dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: center; /* Ensure text alignment within the button */
+        }
+/*-----------------------------------------------------------*/
+/* selected images style */
+/*-----------------------------------------------------------*/
+/* Common styles for both .selected-images_pos and .selected-images_neg containers */
+.selected-images_pos, .selected-images_neg {
+    display: flex;
+    flex-wrap: wrap;
+    
+    justify-content: flex-start;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    border-radius: 5px;
+    width: 100%; /* Make the width match the parent container */
+    box-shadow: 0 4px 8px rgba(0, 128, 0, 0.4); /* Default shadow, can be adjusted for each */
+    flex-grow: 1; /* Ensure both containers grow to match height of the parent */
+    flex-basis: 0; /* Prevent from setting a base size */
+}
+
+/* Positive container */
+.selected-images_pos {
+    background-color: #1db720;
+    box-shadow: 0 4px 8px rgba(0, 128, 0, 0.4); /* Green shadow for positive */
+}
+
+/* Negative container */
+.selected-images_neg {
+    background-color: #df1c1c;
+    box-shadow: 0 4px 8px rgba(255, 0, 0, 0.4); /* Red shadow for negative */
+}
+
+/* Ensure correct image size in the selected containers, targeting img.checkable */
+.selected-images_pos img.checkable, .selected-images_neg img.checkable {
+    width: 150px;   /* Same width as in image-container */
+    height: auto;   /* Maintain aspect ratio */
+    border-radius: 5px;
+    transition: transform 300ms, box-shadow 300ms;
+    cursor: pointer;
+}
+
+/* Hover and active states for images */
+.selected-images_pos img.checkable:hover, .selected-images_neg img.checkable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.selected-images_pos img.checkable:active, .selected-images_neg img.checkable:active {
+    transform: scale(1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header styles for both positive and negative containers */
+.text-header {
+    color: white;
+    text-align: center;
+    width: 100%;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 10px 10px 0 0;
+    position: relative;
+    top: 0;
+    z-index: 1;
+}
+
+.selected-images_pos .text-header {
+    background-color: #1db720; /* Green for relevant */
+}
+
+.selected-images_neg .text-header {
+    background-color: #df1c1c; /* Red for non-relevant */
+}
+
+/* Parent container holding both image containers */
+.image-container {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+
+    margin: 0px; /* Unifica margin-top e margin-bottom */
+   
+    padding: 5px; /* Add some padding for nicer layout */
+    background-color: #fff; /* Optional: add a background color */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: add a shadow for depth */
+    width: 110%; /* You can adjust the width as per your preference */
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+/* Flexbox styles for containers inside the image-container */
+.selected-images_pos,
+.selected-images_neg {
+    height: 100%; /* Ensure they take full height of the parent container */
+    width: 100%; /* Ensure they stretch horizontally */
+}
+
+/* Flexbox styles for containers inside the image-container */
+.selected-images_pos,
+.selected-images_neg {
+    height: 100%; /* Ensure they take full height of the parent container */
+}
+
+.image-container div {
+    margin: 5px;
+    text-align: center;
+    width: 190px;
+    max-width: 100%;
+    margin-bottom: 10px;
+}
+.image-container img {
+    width: 150px;
+    height: auto;
+    border-radius: 5px; /* Rounded corners for images */
+    transition: transform 300ms, box-shadow 300ms; /* Smooth transitions */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+
+
+.image-container img:active {
+    transform: scale(1); /* Reset scale on click */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Reset shadow on click */
+}
+
+/*-----------------------------------------------------------*/
+/* thumbs  style */
+/*-----------------------------------------------------------*/
+.thumbs-up, .thumbs-down {
+    font-size: 25px; /* Size of the emoji */
+    background: none; /* No background box */
+    border: none; /* No border */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: transform 0.2s ease; /* Smooth hover effect */
+    padding: 0; /* No padding around emoji */
+    color: inherit; /* Inherit color for flexibility */
+    margin-left: 12px;
+    margin-right: 12px;
+}
+
+/* Green thumbs-up */
+.thumbs-up {
+    color: #4CAF50; /* Green color */
+}
+
+/* Hover effect for thumbs-up */
+.thumbs-up:hover {
+    transform: scale(1.2); /* Slightly enlarge on hover */
+}
+
+/* Red thumbs-down */
+.thumbs-down {
+    color: #df1c1c; /* Red color */
+}
+
+/* Hover effect for thumbs-down */
+.thumbs-down:hover {
+    transform: scale(1.2); /* Slightly enlarge on hover */
+}
+
+/*-----------------------------------------------------------*/
+/* fancy checks  style */
+/*-----------------------------------------------------------*/
+/* General styles for fancy checks */
+.fancychecks {
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+   
+}
+
+.fancychecks img {
+    display: block;
+    width: 100%;
+    height: auto;
+   
+}
+
+
+
+
+.fancychecks.checked::before, 
+.fancychecks_negative.checked::before {
+    transform: scale(1);
+}
+
+
+/* Border styling for images based on relevance */
+.fancychecks_positive img, 
+.relevant {
+    border: 5px solid green;
+}
+
+.fancychecks_negative img, 
+.non-relevant {
+    border: 5px solid red;
+}
+
+/* Prevent interaction with specific elements */
+.relevant img, 
+.non-relevant img {
+    pointer-events: none;
+}
+
+/*-----------------------------------------------------------*/
+/* simple img style */
+/*-----------------------------------------------------------*/
+/* General reset for conflicting styles */
+img {
+    all: unset;
+}
+
+/* Styling for the new images */
+.styled-image {
+    width: 150px;
+    height: auto;
+    border-radius: 5px; /* Rounded corners */
+   
+}
+
+
+
+/*-----------------------------------------------------------*/
+/* simple img style */
+/*-----------------------------------------------------------*/
+
+.positive-button, .negative-button {
+    position: absolute;
+    top: 10px;
+    font-size: 14px; /* Small font size */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 5px 10px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.positive-button {
+    left: 10px;
+}
+
+.negative-button {
+    right: 10px;
+}
+
+
+
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0; 
+}
+
+
+#loading {
+    display: none;
+    margin-top: 20px;
+}
+
+
+
+
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border-left-color: #09f;
+    animation: spin 1s ease infinite;
+    margin: auto;
+}
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }}
+
+.hidden {
+    display: none;
+}
+
+
+#results, #selected-results {
+    margin: 20px auto;
+    width: 80%;
+}
+
+.results h1, #selected-results h1 {
+    
+    font-size: 15px;
+    margin-bottom: 20px;
+}
+
+
+.image-wrapper {
+    position: relative; /* set container to a relative position */
+    width: 180px; /* set your desired width */
+    height: 500px; /* set your desired height */
+  }
+  
+  .button {
+    position: absolute; /* set button to an absolute position */
+    top: 50%; /* adjust the top position of the button */
+    left: 50%; /* adjust the left position of the button */
+    transform: translate(-50%, -50%); /* center the button */
+    z-index: 2; /* set a higher z-index than the image */
+    background-color: #007bff; /* set your desired background color */
+    color: #fff; /* set your desired text color */
+    border: none; /* remove button border */
+    padding: 10px 20px; /* set your desired padding */
+    cursor: pointer; /* change mouse cursor on hover */
+  }
+
+.plus-button:hover {
+    color: #45a049; /* Darker color on hover */
+}
+
+/* Your CSS for loading spinner and other elements */
+.spinner {
+    width: 25px;
+    height: 25px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+
+
+
+
+.negative-images-container{
+    display: flex;
+    width: 150px; /* Ensure this width is smaller than or equal to the parent element */
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    overflow: visible;
+  
+    position: relative;
+    margin: 0 auto; /* This will center the container horizontally */
+}
+
+.positive-images-container {
+    display: flex;
+    width: 150px; /* Ensure this width is smaller than or equal to the parent element */
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    overflow: visible;
+  
+    position: relative;
+    margin: 0 auto; /* This will center the container horizontally */
+}
+
+
+.styled-image {
+    width: 150px;
+    height: auto;
+    border-radius: 5px;
+    cursor: pointer; /* Indicates the image is clickable */
+    transition: transform 0.3s ease, z-index 0.3s ease; /* Smooth zoom transition */
+    position: relative; /* Keep the image in the flow */
+    z-index: 1; /* Default stacking */
+}
+
+/* Zoomed-in state */
+.styled-image.zoomed {
+    transform: scale(2.8); /* Double the size */
+    z-index: 2; /* Place the zoomed image above others */
+}
+
+/* Zoomed-in state */
+.styled-image.zoomed2{
+    transform: scale(2); /* Double the size */
+    z-index: 2; /* Place the zoomed image above others */
+}
+h2 {
+    display: block;
+    font-size: 3em;
+    color: #da0e0e;
+    margin-block-start: 0.83em;
+    margin-block-end: 0.83em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+    unicode-bidi: isolate;
+}
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+h3 {
+    display: block;
+    font-size: 14px;
+    color: #0b8005;
+    margin-top: 2px ;
+  
+    font-weight: bold;
+    unicode-bidi: isolate;
+}
+h4 {
+    display: block;
+    font-size: 14px;
+    color: #e73e0b;
+    margin-top: 2px ;
+    font-weight: bold;
+    unicode-bidi: isolate;
+}
+/* Flex container for the liked and disliked images */
+.images-container {
+    display: flex;
+    justify-content: space-between; /* Align images container side by side */
+    gap: 5px; /* Space between the columns */
+    padding: 10px; /* Add padding for better layout */
+    
+}
+
+
+svg {
+    display: inline-block;
+    width: 20px; /* Adjust size */
+    height: 20px;
+    vertical-align: middle;
+}
+
+.fa-thumbs-up, .fa-thumbs-down {
+    font-size: 3em; /* 3 times the default size */
+}
+body {
+    transform: scale(1);
+    transform-origin: top left;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+body {
+    zoom: 100%;
+}
