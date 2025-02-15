@@ -5,7 +5,7 @@ import pickle
 import tqdm
 
 #general functions
-from f_similarity_metrics_old import *
+from f_similarity_metrics import *
 from evaluation_metrics import*
 from f_display_and_feedback import *
 from f_process_data import *

@@ -12,3 +12,6 @@ data_df.csv
 index_2_id.pkl
 __pycache__
 *.pyc
+non_relevant_images_ids.json
+relevant_images_ids.json 
+old_functions 

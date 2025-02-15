@@ -18,7 +18,7 @@
     display: flex;
     flex-direction: column;
     align-items: center; /* Centra gli elementi orizzontalmente */
-    justify-content: center; /* Centra gli elementi verticalmente */
+    
     width: 25%;
     background-color: #f4f4f4;
     padding: 20px;

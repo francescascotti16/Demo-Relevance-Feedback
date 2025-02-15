@@ -1,56 +1,30 @@
-
-# libraries 
+# Libraries 
 from flask import Flask, request, jsonify, send_from_directory
 import json
 import requests
 import pandas as pd
 import pickle
 import tqdm
-import time 
 
-#general functions
+# General functions
+from old_functions.f_evaluation_metrics import *
+from old_functions.f_process_data import *
+from algorithms_functions.f_display_and_feedback import *
 
-from f_evaluation_metrics import*
-from f_display_and_feedback import *
-from f_process_data import *
+# Algorithms functions
+from algorithms_functions.f_rocchio import *
+from algorithms_functions.f_pichunter_star import *
+from algorithms_functions.f_svm import *
+from algorithms_functions.functions_similarity_metrics import *
+from algorithms_functions.f_polyquery_msed_logscale import *
+from algorithms_functions.function_polyadic_new import *
 
-# algortihms functions
-from f_rocchio import *
+# Indexed data functions 
+from algorithms_functions.f_interfaccia import *
 
-from f_pichunter_star import *
-from f_svm import *
-from functions_similarity_metrics import *
-from f_polyquery_msed_logscale import *
-from function_polyadic_new import *
-
-import time
-import requests
-import json
-import pandas as pd
-from flask import request, jsonify
-
-#indexed data functions 
-from f_interfaccia import *
-
-#algorithms functions for renaming 
-
-from f_pichunter_star import pichunter_single_step as pichunter_single_step_star
-from datetime import datetime
-import hashlib
-import json
-import pandas as pd
-import numpy as np
-from f_display_and_feedback import *
-from f_evaluation_metrics import *
-from f_pichunter_star import *
-
-from f_polyquery_msed_logscale import *
-from f_polyquery_sed_logscale import *
-from f_process_data import *
-from f_rocchio import *
-from f_svm import *
-from f_pichunter import *
-from f_process_data import *
+# Algorithms functions for renaming
+from algorithms_functions.f_pichunter_star import pichunter_single_step as pichunter_single_step_star
+from algorithms_functions.f_pichunter import pichunter_single_step as pichunter_single_step_old
 
 #Initialize query_value_rocchio globally
 
@@ -177,7 +151,7 @@ def save_and_update():
     if selected_algorithm == 'rocchio':
         # Use query_value_rocchio as initial_query
   
-        df_display, new_query, time_new_query, time_of_search, get_distance_matrix_time, time_create_display = rocchio_single_step(data_df, df_display,
+        df_display, new_query, _, time_of_search, _, _ = rocchio_single_step(data_df, df_display,
                                                     relevant_image_ids_temp, non_relevant_image_ids_temp, 
                                                     alpha=0.75, beta=1, gamma=0.75, 
                                                     fun_name="euclidean", 
@@ -190,7 +164,7 @@ def save_and_update():
     elif selected_algorithm == 'pichunter-star':
         # eliminate the non_relevant_image_ids that are not in df_display_columns:data_df,display_df, relevant_ids,fun_name="softmin", initial_prob=0,temperature=1)
               
-        df_display, new_prob_values_star, time_of_search, time_display, time_get_similarityx = pichunter_single_step_star(data_df, df_display, relevant_image_ids_temp, 
+        df_display, new_prob_values_star, time_of_search, _, _ = pichunter_single_step_star(data_df, df_display, relevant_image_ids_temp, 
                                                             non_relevant_image_ids_temp, 
                                                             fun_name="softmin", 
                                                             initial_prob=new_prob_values_pichunter_star,temperature=82.10553)
@@ -202,9 +176,6 @@ def save_and_update():
         new_prob_values_pic = new_prob_values
     elif selected_algorithm == 'svm':
         df_display, new_scores, time_of_search, time_distance_from_hyperplane, total_time_score_computation, total_time_display = svm_single_step(data_df, df_display, relevant_image_ids, non_relevant_image_ids)
-        
-        
-   
     elif selected_algorithm == 'polyadic-sed':
         
         df_display, new_scores, _, _, _, _, _, _, _,_, _, _,time_of_search=poly_single_step(data_df_log,df_display_log, relevant_image_ids,non_relevant_image_ids,alpha=0.75, 
@@ -225,17 +196,12 @@ def save_and_update():
                                                                                                 entropy_dict=entropy_dict_value)
         score_value_polyquery_msed_log = new_scores
         precomputed_dict_polyquery_msed_log_value=precomputed_dict
-        entropy_dict_value=entropy_dict
-        #print error message if the algorithm is not recognized
-        print("Error: Algorithm not recognized")
-        # use Rocchio 
-        
-        # Use query_value_rocchio as initial_query
+        entropy_dict_value=entropy_dict 
     else:
         #print error message if the algorithm is not recognized
         print("Error: Algorithm not recognized")
         
-        df_display, new_query, time_new_query, time_of_search, get_distance_matrix_time, time_create_display = rocchio_single_step(data_df, df_display,
+        df_display, new_query, _, time_of_search, _, _ = rocchio_single_step(data_df, df_display,
                                                     relevant_image_ids_temp, non_relevant_image_ids_temp, 
                                                     alpha=0.75, beta=1, gamma=0.75, 
                                                     fun_name="euclidean", 
