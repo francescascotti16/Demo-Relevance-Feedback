@@ -22,7 +22,7 @@ This repository provides a demo for executing various relevance feedback algorit
 Ensure Python is installed, then run:
 ```bash
 pip install -r requirements.txt
-
+```
 ## Download and Prepare the Dataset
 Download the feature file "features-clip-laion.tar.gz" from Zenodo: https://zenodo.org/records/8188570.
 Extract the features and IDs using the functions in f_files.py. Detailed preprocessing steps are provided in preprocessing.ipynb.
