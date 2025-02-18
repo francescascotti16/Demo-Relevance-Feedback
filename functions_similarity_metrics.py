@@ -218,6 +218,7 @@ def get_similarity_matrix_temperature(data1_df, dataset_df,user_model_fun_name="
     user_model_fun_name: function to calculate the user model
 
     '''
+    start_time = datetime.now()
     # Function to get the similarity matrix between the display and the whole dataset
     n = data1_df.shape[1]
     m = dataset_df.shape[1]
@@ -229,12 +230,13 @@ def get_similarity_matrix_temperature(data1_df, dataset_df,user_model_fun_name="
     elif user_model_fun_name == "softmax_cosine":
         similarity = np.exp(cosine_similarity(dataset_df.T, data1_df.T)/temperature)
     elif user_model_fun_name == "l1_normalized_cosine":
-        similarity =(1+cosine_similarity(dataset_df.T, data1_df.T))/temperature  
+        similarity =(1.001+cosine_similarity(dataset_df.T, data1_df.T))/temperature  
     else: 
         print(f"ERR The user model function {user_model_fun_name} is not implemented. Using softmin similarity.")  
         similarity = np.exp(-euclidean_distances(dataset_df.T, data1_df.T)/temperature)
- 
-    return similarity #ow-wise normalized version of the similarity scores between the columns of dataset_df and data1_df
+    end_time = datetime.now()
+    total_time=end_time-start_time
+    return similarity , total_time
 def get_fast_soft_similarity_matrix(n_display,selected_df, dataset_df,avg_norm,user_model_fun_name="softmin"): 
     '''
     selected_df: DataFrame with the image from display selected by the user
@@ -301,13 +303,16 @@ def get_soft_similarity_matrix(data1_df, dataset_df,user_model_fun_name="softmin
 
 
 
-def get_distance_matrix(data1_df, dataset_df, fun_name="euclidean"): 
+
+def get_distance_matrix(data1_df, dataset_df, fun_name="euclidean"):
+     
     '''
     data1_df: DataFrame with the data queries or all display
     dataset_df: DataFrame with the dataset
     fun_name: similatity function to calculate 
 
     '''
+    start_time = datetime.now()
     # Function to get the similarity matrix between the display and the whole dataset
     n = data1_df.shape[1]
     m = dataset_df.shape[1]
@@ -324,8 +329,11 @@ def get_distance_matrix(data1_df, dataset_df, fun_name="euclidean"):
     else: 
          print(f"ERR The function {fun_name} is not implemented. Using Euclidean distance.")  
          distance_matrix=euclidean_distances(dataset_df.T, data1_df.T)
- 
-    return distance_matrix
+    end_time = datetime.now()
+    total_time=end_time-start_time
+    return distance_matrix , total_time
+
+
 
 # def precomputed_sum_product(df_with_complexity,action, 
 #                             precomputed_sum_pos=0,

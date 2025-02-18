@@ -7,24 +7,23 @@ import pickle
 import tqdm
 
 # General functions
-from old_functions.f_evaluation_metrics import *
-from old_functions.f_process_data import *
-from algorithms_functions.f_display_and_feedback import *
+
+from f_process_data import *
+from f_display_and_feedback import *
 
 # Algorithms functions
-from algorithms_functions.f_rocchio import *
-from algorithms_functions.f_pichunter_star import *
-from algorithms_functions.f_svm import *
-from algorithms_functions.functions_similarity_metrics import *
-from algorithms_functions.f_polyquery_msed_logscale import *
-from algorithms_functions.function_polyadic_new import *
+from f_rocchio import *
+from f_pichunter_star import *
+from f_svm import *
+from functions_similarity_metrics import *
+from f_polyquery_msed_logscale import *
+from f_polyadic_sed import *
 
 # Indexed data functions 
-from algorithms_functions.f_interfaccia import *
+from f_files import *
 
 # Algorithms functions for renaming
-from algorithms_functions.f_pichunter_star import pichunter_single_step as pichunter_single_step_star
-from algorithms_functions.f_pichunter import pichunter_single_step as pichunter_single_step_old
+from f_pichunter_star import pichunter_single_step as pichunter_single_step_star
 
 #Initialize query_value_rocchio globally
 
@@ -70,6 +69,9 @@ entropy_dict_value=None
 score_value_polyquery_msed_log=None
 score_value_polyadic_jsd=None
 
+precomputed_dict_polyquery_sed_log_value=None
+entropy_dict_value_sed=None
+score_value_polyquery_sed_log=None
 
 @app.route('/')
 def index():
@@ -128,7 +130,7 @@ def search(n_display=400):
 @app.route('/save_and_update', methods=['POST'])
 def save_and_update():
     global query_value_rocchio,new_prob_values_pichunter_star, score_value_polyadic,score_value_polyadic_jsd, score_value_polyquery_msed, complexity_dict_value, precomputed_dict_value, precomputed_dict_polyquery_msed_log_value, entropy_dict_value, score_value_polyquery_msed_log
-    global data_df, df_display, data_df_log, df_display_log, time_of_search,new_prob_values_pic
+    global data_df, df_display, data_df_log, df_display_log, time_of_search,new_prob_values_pic,precomputed_dict_polyquery_sed_log_value,entropy_dict_value_sed,score_value_polyquery_sed_log
     
     data = request.get_json()
     relevant_image_ids = data.get('relevant_images_ids', [])
@@ -172,17 +174,25 @@ def save_and_update():
         new_prob_values_pichunter_star = new_prob_values_star
     elif selected_algorithm == 'pichunter':
         non_relevant_image_ids=[]
-        df_display, new_prob_values ,time_of_search =pichunter_single_step_old(data_df,df_display, relevant_image_ids_temp,fun_name="softmin", initial_prob=new_prob_values_pic,temperature=1)
+        df_display, new_prob_values ,time_of_search, _, _ = pichunter_single_step_star(data_df, df_display, relevant_image_ids_temp, non_relevant_image_ids, 
+                                                            fun_name="softmin", initial_prob=new_prob_values_pic, temperature=82.10553)  
         new_prob_values_pic = new_prob_values
     elif selected_algorithm == 'svm':
         df_display, new_scores, time_of_search, time_distance_from_hyperplane, total_time_score_computation, total_time_display = svm_single_step(data_df, df_display, relevant_image_ids, non_relevant_image_ids)
     elif selected_algorithm == 'polyadic-sed':
         
-        df_display, new_scores, _, _, _, _, _, _, _,_, _, _,time_of_search=poly_single_step(data_df_log,df_display_log, relevant_image_ids,non_relevant_image_ids,alpha=0.75, 
-                                                                                              beta=1, gamma=0.75,fun_name="sed", initial_query=None, initial_scores=score_value_polyadic)
-
+        df_display, new_scores, precomputed_dict_sed, entropy_dict_sed ,time_of_search,_,_= poly_sed_logscale_single_step(data_df_log, df_display_log, 
+                                                                                                relevant_image_ids, 
+                                                                                                non_relevant_image_ids, 
+                                                                                                precomputed_dict_initial=precomputed_dict_polyquery_sed_log_value, 
+                                                                                                alpha=0.7, beta=0.7, gamma=0.4, 
+                                                                                                initial_query=None, 
+                                                                                                initial_scores=score_value_polyadic,
+                                                                                                entropy_dict=entropy_dict_value)
         score_value_polyadic = new_scores
         
+        precomputed_dict_polyquery_sed_log_value=precomputed_dict_sed
+        entropy_dict_value=entropy_dict_sed
         
        
     elif selected_algorithm == 'polyadic-msed':

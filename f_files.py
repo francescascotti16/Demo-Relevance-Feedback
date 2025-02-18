@@ -2,7 +2,7 @@
 import pandas as pd
 import h5py
 import tqdm
-from scipy.special import logistic
+#from scipy.special import logistic
 from f_process_data import *
 
 
