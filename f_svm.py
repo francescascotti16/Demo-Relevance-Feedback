@@ -70,7 +70,7 @@ def svm_score(data_df, relevant, non_relevant):
 
     return distances_to_hyper, time_distance_from_hyperplane, total_time
 
-def svm_single_step(data_df, display_df, relevant_ids, non_relevant_ids, initial_scores=None, alpha=0, beta=1):
+def svm_single_step(data_df, display_df, relevant_ids, non_relevant_ids, initial_scores=None, alpha=0.75, beta=0.25):
     '''
     Performs a single step of the SVM-based relevance feedback algorithm.
 
