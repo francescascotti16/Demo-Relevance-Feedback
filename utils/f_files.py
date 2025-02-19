@@ -2,8 +2,8 @@
 import pandas as pd
 import h5py
 import tqdm
-from f_process_data import *
-from functions_similarity_metrics import logistic
+from utils.f_process_data import *
+from utils.functions_similarity_metrics import logistic
 import requests
 def create_logistic_indexed_data(indexed_data):
     """

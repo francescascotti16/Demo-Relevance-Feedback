@@ -8,23 +8,23 @@ import tqdm
 
 # General functions
 
-from f_process_data import *
-from f_display_and_feedback import *
+from utils.f_process_data import *
+from utils.f_display_and_feedback import *
 
 # Algorithms functions
-from f_rocchio import *
-from f_pichunter_star import *
-from f_svm import *
-from functions_similarity_metrics import *
-from f_polyquery_msed_logscale import *
-from f_polyadic_sed import *
-from demo_functions import *
+from algorithms_functions.f_rocchio import *
+from algorithms_functions.f_pichunter_star import *
+from algorithms_functions.f_svm import *
+from utils.functions_similarity_metrics import *
+from algorithms_functions.f_polyquery_msed_logscale import *
+from algorithms_functions.f_polyadic_sed import *
+from utils.demo_functions import *
 
 # Indexed data functions 
-from f_files import *
+from utils.f_files import *
 
 # Algorithms functions for renaming
-from f_pichunter_star import pichunter_single_step as pichunter_single_step_star
+from algorithms_functions.f_pichunter_star import pichunter_single_step as pichunter_single_step_star
 
 #Initialize query_value_rocchio globally
 

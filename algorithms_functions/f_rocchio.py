@@ -1,8 +1,8 @@
 
 import numpy as np
 import pandas as pd
-from functions_similarity_metrics import get_distance_matrix, get_similarity_matrix
-from f_display_and_feedback import create_display
+from utils.functions_similarity_metrics import get_distance_matrix, get_similarity_matrix
+from utils.f_display_and_feedback import create_display
 
 
 from datetime import datetime

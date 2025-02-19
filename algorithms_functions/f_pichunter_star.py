@@ -2,8 +2,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import numpy as np
-from functions_similarity_metrics import  get_similarity_matrix_temperature
-from f_display_and_feedback import create_display
+from utils.functions_similarity_metrics import  get_similarity_matrix_temperature
+from utils.f_display_and_feedback import create_display
 from datetime import datetime
 
 def pichunter_single_step(data_df,display_df, relevant_ids,non_relevant_ids,fun_name="softmin", initial_prob=0, temperature=1):

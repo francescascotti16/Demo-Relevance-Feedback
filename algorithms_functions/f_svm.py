@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from f_display_and_feedback import create_display
+from utils.f_display_and_feedback import create_display
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from datetime import datetime
