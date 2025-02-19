@@ -18,6 +18,7 @@ from f_svm import *
 from functions_similarity_metrics import *
 from f_polyquery_msed_logscale import *
 from f_polyadic_sed import *
+from demo_functions import *
 
 # Indexed data functions 
 from f_files import *
@@ -77,9 +78,9 @@ score_value_polyquery_sed_log=None
 def index():
     return send_from_directory('static', 'demo.html')
 
-
+display_number=400
 @app.route('/search', methods=['POST'])
-def search(n_display=400):
+def search(n_display=display_number):
     global data_df, df_display, data_df_log, df_display_log , query_features_total
 
     
@@ -91,7 +92,7 @@ def search(n_display=400):
     host = "https://visione.isti.cnr.it"
     textual_mode = "clip-laion"
     max_rank =1000
-
+    
     query = json.dumps({"query": [{"textual": query_orig}], "parameters": [{"textualMode": textual_mode, "occur": "and", "simReorder": "false"}]})
     query_features_total=fetch_text_feature(query)
    
@@ -109,7 +110,7 @@ def search(n_display=400):
                                             indexed_data, 
                                             indexed_ids)
     
-    df_display_col_names = df_results['imgId'].head(400).tolist()
+    df_display_col_names = df_results['imgId'].head(display_number).tolist()
     df_display = data_df[df_display_col_names]
     
     data_df_log = create_dataframe_from_results(df_results, 
@@ -118,7 +119,7 @@ def search(n_display=400):
                                                 indexed_ids)
    
     
-    df_display_col_names_log = df_results['imgId'].head(400).tolist()
+    df_display_col_names_log = df_results['imgId'].head(display_number).tolist()
     df_display_log = data_df_log[df_display_col_names_log]
     print('shape of data_df_log:', data_df_log.shape)
     image_urls = ["https://visione.isti.cnr.it/frames/{}/{}.png".format(img_id.split('-')[0], img_id) for img_id in img_ids]
@@ -185,7 +186,7 @@ def save_and_update():
                                                                                                 relevant_image_ids, 
                                                                                                 non_relevant_image_ids, 
                                                                                                 precomputed_dict_initial=precomputed_dict_polyquery_sed_log_value, 
-                                                                                                alpha=0.7, beta=0.7, gamma=0.4, 
+                                                                                                alpha=0.75, beta=1, gamma=0.75, 
                                                                                                 initial_query=None, 
                                                                                                 initial_scores=score_value_polyadic,
                                                                                                 entropy_dict=entropy_dict_value)
@@ -200,7 +201,7 @@ def save_and_update():
                                                                                                 relevant_image_ids, 
                                                                                                 non_relevant_image_ids, 
                                                                                                 precomputed_dict_initial=precomputed_dict_polyquery_msed_log_value, 
-                                                                                                alpha=0.7, beta=0.7, gamma=0.4, 
+                                                                                                alpha=0.75, beta=1, gamma=0.75, 
                                                                                                 initial_query=None, 
                                                                                                 initial_scores=score_value_polyquery_msed_log,
                                                                                                 entropy_dict=entropy_dict_value)
