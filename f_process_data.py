@@ -4,8 +4,9 @@ import numpy as np
 
 def process_data(csv_mapping_path, csv_query_judgment_path, threshold_1=200, threshold_0=1400):
     '''
-    This function reads the CSV files and processes the data to create ..
-    
+    This function reads the CSV files and processes the data to create 
+    - shot_labels_query:a dictionary of shots with corresponding queries and judgments,
+    -queries: a list of queries that meet the conditions.
     '''
     # Read CSV files
     df_visione_mapping = pd.read_csv(csv_mapping_path, dtype={'column_name': str})
@@ -35,7 +36,7 @@ def process_data(csv_mapping_path, csv_query_judgment_path, threshold_1=200, thr
         shot_labels_query[row['visioneShotID'], row['query']] = row['judgment']
     
  
-    return df_visione_mapping, df_query_judgment, df_complete, df_complete_unique_sorted, df_visione_mapping_query, shot_labels_query,queries
+    return  shot_labels_query,queries
 
 
 
