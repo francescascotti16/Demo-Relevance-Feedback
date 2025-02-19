@@ -4,7 +4,7 @@ This repository provides a demo for executing various relevance feedback algorit
 
 ## Repository Structure
 
-- `algorithms_functions/` - Python implementations for the following algorithms:
+- `algorithms/` - Contains Python files with implementations of the following algorithms:
   - **Rocchio**
   - **Polyadic Search**
   - **PicHunter**
@@ -12,17 +12,24 @@ This repository provides a demo for executing various relevance feedback algorit
 - `static/` - Frontend assets:
   - `demo.html` - JavaScript functions for user interaction
   - `style.css` - Webpage styling
-- `demo.py` - Main script invoking the algorithms and handling Flask-based communication
-- `f_files.py` - Functions for extracting features and IDs from the dataset
-- `preprocessing.ipynb` - Instructions for data preprocessing
+- `utils/` - Utility functions:
+  - `f_files.py` - Feature extraction and dataset handling
+  - `f_process_data.py` - Preprocessing functions
+  - `f_display_and_feedback.py` - Functions for user interaction
+  - `functions_similarity_metrics.py` - Similarity computation
+- `demo.py` - Main script for executing the algorithms and handling Flask-based communication
+- `demo_functions.py` - Functions used in `demo.py`
+- `preprocessing.ipynb` - Notebook with instructions for data preprocessing
+- `time_exp.ipynb` - Notebook for time-based performance experiments
 
-## Setup and Execution
 
-### Install Dependencies
-Ensure Python is installed, then run:
-```bash
-pip install -r requirements.txt
-```
-## Download and Prepare the Dataset
-Download the feature file "features-clip-laion.tar.gz" from Zenodo: https://zenodo.org/records/8188570.
-Extract the features and IDs using the functions in f_files.py. Detailed preprocessing steps are provided in preprocessing.ipynb.
+
+### 3. Download and Prepare the Dataset
+1. Download the feature file **"features-clip-laion.tar.gz"** from Zenodo: [Zenodo Link](https://zenodo.org/records/8188570).  
+2. Extract features and IDs using the functions in `utils/f_files.py`.  
+3. Follow the detailed preprocessing steps provided in `preprocessing.ipynb`.  
+
+
+## Experimental Evaluation
+- The `time_exp.ipynb` notebook contains time-based performance experiments for evaluating algorithm efficiency.
+
