@@ -61,9 +61,9 @@
                 
                 
             </div>
-            <!-- Contenitore per il tempo di ricerca -->
+            
             <div id="time-of-search" style="text-align: center; margin-top: 20px; font-weight: bold; font-size: 20px; color: #2196F3;">
-                <!-- Il tempo di ricerca apparirà qui -->
+              
             </div>
         </div>
     
@@ -140,16 +140,15 @@
             
         
         function createImageWithThumbs(containerDiv, url, id) { 
-            // Crea il contenitore per l'immagine e i pulsanti
-          
+           
             const imgDiv = document.createElement("div");
-            imgDiv.className = "image-item"; // Classe base per lo stile
+            imgDiv.className = "image-item"; 
             
           
             const thumbsDiv = document.createElement("div");
             thumbsDiv.className = "thumbs-buttons";
             
-            // Pulsante "Thumbs Up"
+            // "Thumbs Up"
             const thumbsUpBtn = document.createElement("button");
             thumbsUpBtn.className = "thumbs-up";
 
@@ -175,7 +174,7 @@
             };
 
                         
-            // Pulsante "Thumbs Down"
+            // "Thumbs Down"
             const thumbsDownBtn = document.createElement("button");
             thumbsDownBtn.className = "thumbs-down";
             // Create the SVG element
@@ -202,38 +201,33 @@
             thumbsDiv.appendChild(thumbsUpBtn);
             thumbsDiv.appendChild(thumbsDownBtn);
            
-            // Contenitore immagine e span
             const span = document.createElement("span");
             span.className = 'fancychecks';
             
             const img = document.createElement("img");
             img.src = url;
             img.id = "image_" + id;
-            // Classe per lo stileimg.className = "styled-image"; // Classe per lo stile
-            
-            // Aggiungi funzionalità di zoom
+          
+            //  zoom
             img.onclick = function() {
-                img.classList.toggle('zoomed2'); // Toggle per lo zoom
+                img.classList.toggle('zoomed2'); 
             };
            
             span.appendChild(img);
             imgDiv.appendChild(thumbsDiv);
             imgDiv.appendChild(span);
             containerDiv.appendChild(imgDiv);
-            // Now that the image is in the DOM, apply the border if needed.
-          
-            
-         //   allImageURLs[id] = url;
+           
 
             
         }function addPositiveBorder(id) {
             const span = document.getElementById('image_' + id).parentElement;
-            span.style.border = "5px solid green"; // Aggiunge bordo verde
+            span.style.border = "5px solid green"; 
         }
         
         function addNegativeBorder(id) {
             const span = document.getElementById('image_' + id).parentElement;
-            span.style.border = "5px solid red"; // Aggiunge bordo rosso
+            span.style.border = "5px solid red"; 
         }
         
         function handleThumbsUp(url, id) {
@@ -283,7 +277,7 @@
                 nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
                 nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
                 delete selectedImageURLs[id];
-                span.style.border = ""; // Rimuove il bordo rosso
+                span.style.border = ""; 
                 removeImageFromContainer(id, "disliked-images");
             }
         }
@@ -332,7 +326,6 @@
             const algorithmSelect = document.getElementById("algorithm-select");
             const selectedAlgorithm = algorithmSelect.options[algorithmSelect.selectedIndex].text.toLowerCase();
         
-            // Invia una richiesta POST all'endpoint '/save_and_update'
             fetch('/save_and_update', {
                 method: 'POST',
                 headers: {
@@ -351,10 +344,10 @@
                 if (data.status === 'success') {
                     displayUpdatedImages(data);
         
-                    // Ottieni il tempo di ricerca dalla risposta
-                    let TimeOfSearch = data.total_time; // Assumi che 'total_time' sia la chiave corretta
+                   
+                    let TimeOfSearch = data.total_time; 
                     let selectedAlgorithm = data.selected_algorithm;
-                    // Aggiorna il contenitore del tempo di ricerca
+                  
                     const timeElement = document.getElementById("time-of-search");
                     if (TimeOfSearch) {
                         timeElement.textContent = selectedAlgorithm +" Time: " + TimeOfSearch;
