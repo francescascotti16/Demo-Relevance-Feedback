@@ -26,8 +26,7 @@ This repository provides a demo for executing various relevance feedback algorit
 
 ### 3. Download and Prepare the Dataset
 1. Download the feature file **"features-clip-laion.tar.gz"** from Zenodo: [Zenodo Link](https://zenodo.org/records/8188570).  
-2. Extract features and IDs using the functions in `utils/f_files.py`.  
-3. Follow the detailed preprocessing steps provided in `preprocessing.ipynb`.  
+2. Follow the detailed preprocessing steps provided in `preprocessing.ipynb`.  
 
 
 ## Experimental Evaluation
