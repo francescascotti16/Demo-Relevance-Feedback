@@ -91,7 +91,7 @@ def search(n_display=display_number):
     
     host = "https://visione.isti.cnr.it"
     textual_mode = "clip-laion"
-    max_rank =1000
+    max_rank =10000
     
     query = json.dumps({"query": [{"textual": query_orig}], "parameters": [{"textualMode": textual_mode, "occur": "and", "simReorder": "false"}]})
     query_features_total=fetch_text_feature(query)
