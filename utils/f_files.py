@@ -5,6 +5,7 @@ import tqdm
 from utils.f_process_data import *
 from utils.functions_similarity_metrics import logistic
 import requests
+import os 
 
 def create_logistic_indexed_data(indexed_data):
     """
