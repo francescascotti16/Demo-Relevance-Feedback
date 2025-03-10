@@ -5,8 +5,9 @@ import tqdm
 from utils.f_process_data import *
 from utils.functions_similarity_metrics import logistic
 import requests
+import numpy as np
+from tqdm import tqdm
 import os 
-
 def create_logistic_indexed_data(indexed_data):
     """
     Create a logistic transformation of the indexed data.
