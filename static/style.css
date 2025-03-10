@@ -68,28 +68,28 @@ h1 {
     background-color: #1976D2;
 }
 
-
 #query-container {
-
     text-align: center;
     margin: 20px auto;
     background: #f7f7f7;
     padding: 20px;
     border-radius: 3px;
-
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 90%;
 }
 
 input {
     display: block;
-    width: calc(100% - 40px);
-    margin: 10px auto;
+    width: 300px; /* Lunghezza fissa di 400px */
+    margin: 10px auto; /* Margine automatico per centrarlo orizzontalmente */
     padding: 12px;
-    font-size: 20px;
+    font-size: 15px;
     border: 1px solid #ddd;
     border-radius: 3px;
+    overflow: auto; /* Rendi l'input scrollabile */
+    max-height: 100px; /* Limita l'altezza dell'input */
 }
+
 /*-----------------------------------------------------------*/
 /* 
 /* Thumbs Up Button style */
@@ -120,11 +120,12 @@ input {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 10px; /* Corretto */
+    margin: 10px; 
     width: 100%;
-    max-width: 350px;
+    max-width: 450px;
     box-sizing: border-box;
     padding: 20px;
+    margin-top: 50px;
 }
 
 /*-----------------------------------------------------------*/
@@ -180,7 +181,7 @@ input {
         width: 300px;
         margin-bottom: 20px;
         transition: transform 0.3s, background-color 0.3s;
-      
+        margin-top: 70px;
         margin-left: auto;
         margin-right: auto;
         
@@ -305,7 +306,7 @@ input {
 .image-container div {
     margin: 5px;
     text-align: center;
-    width: 190px;
+    width: 300px;
     max-width: 100%;
     margin-bottom: 10px;
 }
@@ -366,16 +367,29 @@ input {
 .fancychecks {
     position: relative;
     display: inline-block;
+    overflow: visible;
     margin: 5px;
    
+}
+.fancychecks {
+    position: relative;
 }
 
 .fancychecks img {
     display: block;
     width: 100%;
     height: auto;
-   
+    transition: transform 0.2s; 
+    position: relative; 
+    z-index: 1; 
 }
+
+.fancychecks img.zoomed2 {
+    transform: scale(2.8); 
+    z-index: 10; 
+}
+
+
 
 .fancychecks.checked::before, 
 .fancychecks_negative.checked::before {
@@ -654,3 +668,44 @@ body {
     overflow: hidden;
     zoom: 100%;
 }
+
+img {
+    all: unset;
+    width: 40px;
+}
+
+/*-----------------------------------------------------------*/
+/* info icon */
+/*-----------------------------------------------------------*/
+/* Flex container for the button and info icon */
+.button-row {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centers the group; you can change this if you want a different alignment */
+  }
+  
+  /* Your existing info icon styling */
+  .info-icon {
+    display: inline-block;
+    width: 24px;
+    height: 22px;
+    border: 2px solid #3498db;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px; /* Adjust spacing between button and icon if needed */
+    user-select: none;
+    margin-bottom: 15px;
+    color: #3498db;
+  }
+  
+  /* Other existing styles remain unchanged */
+  .info-message {
+    margin-top: 5px;
+    font-size: 20px;
+    color: #3498db;
+    margin-left: 28px;
+  }
+  

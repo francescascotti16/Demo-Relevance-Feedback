@@ -10,28 +10,41 @@
 </head>
 <body>
     <div id="page">
+
+        <!-- GitHub Icon in Top-Right Corner -->
+        <div style="position: absolute; top: 10px; left: 20px; z-index: 1000;">
+            <a href="https://github.com/francescascotti16/Demo-Relevance-Feedback" target="_blank" title="View on GitHub">
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" 
+                     alt="GitHub" 
+                     width="32" 
+                     height="32"
+                     style="cursor: pointer;">
+            </a>
+        </div>
+
         <!-- Menu (Left Column) -->
-
         <div id="menu">
-            
-
             <div id="button-container" class="button-container" style="display:block;">
-                
-                    
-                <input type="text" id="query" name="query"  query-container input" placeholder="Enter your query here">
-                <button class="save-button" onclick="submitQuery()">Search</button>
-                
-            <div id="loading" style="display:none;">
-                <div class="spinner"></div>
-            </div>
+                <input type="text" maxlength="100" id="query" name="query" class="query-container" placeholder="Enter your query here">
+                <div class="button-row">
+                    <button class="save-button" onclick="submitQuery()">Search</button>
+                    <span class="info-icon" onclick="toggleInfoMessage()">i</span>
+                  </div>
+                <div id="info-message" class="info-message" style="display:none;">
+                Please note that the top 500 results of the text-based search will be deterministically shuffled to form the initial display (in order to better assess the subsequent performance of the relevance feedback methods).
+                </div>
+                <div id="loading" style="display:none;">
+                    <div class="spinner"></div>
+                </div>
                 <select id="algorithm-select" class="dropbtn">
                     <option disabled selected>Select Algorithm</option>
                     <option value="Rocchio">Rocchio</option>
+                    <option value="PicHunter">PicHunter</option>
                     <option value="PicHunter-star">PicHunter-star</option>
                     <option value="SVM">SVM</option>
                     <option value="Polyadic-SED">Polyadic-SED</option>
                     <option value="Polyadic-MSED">Polyadic-MSED</option>
-                    <option value="PicHunter">PicHunter</option>
+                   
                 </select>
                 <button onclick="saveAndUpdate()" class="save-button">Update Results</button>
                 <div id="images-container" class="images-container">
@@ -57,22 +70,35 @@
                         <div id="disliked-images" class="negative-images-container"></div>
                     </div>
                 </div>
-                
-                
-                
             </div>
             
             <div id="time-of-search" style="text-align: center; margin-top: 20px; font-weight: bold; font-size: 20px; color: #2196F3;">
-              
             </div>
         </div>
     
-     
-    
+        <!-- Content Section (Right Column) -->
+        <div id="content">
+            <div id="image-container"></div>
+            <div id="results"></div>
+            <div id="selected-results" class="hidden"></div>
+        </div>
+    </div>
+    <script>
+        function toggleInfoMessage() {
+          var infoMessage = document.getElementById("info-message");
+          if (infoMessage.style.display === "none" || infoMessage.style.display === "") {
+            infoMessage.style.display = "block";
+          } else {
+            infoMessage.style.display = "none";
+          }
+        }
+      </script>
+</body>
+
     
         <!-- Content Section (Right Column) -->
         <div id="content">
-            
+
                
                 <div id="image-container"></div>
                 <div id="results"></div>
@@ -83,121 +109,53 @@
 
     <script>
        
+          
         let selectedImageURLs = {};
         //let allImageURLs = {};
         let relevantImages = [];
         let nonRelevantImages = [];
         let relevantImagestemp = [];
         let nonRelevantImagestemp = [];
-       
-        
-        function submitQuery() {
-            
-            const loadingDiv = document.getElementById("loading");
-            loadingDiv.style.display = "block";
-        
-            const query = document.getElementById("query").value;
-            const resultsDiv = document.getElementById("results");
-            resultsDiv.innerHTML = '';
-            const selectedResultsDiv = document.getElementById("selected-results");
-            selectedResultsDiv.innerHTML = '';
-            selectedResultsDiv.classList.add("hidden");
-            resultsDiv.classList.remove("hidden");
-            document.getElementById("liked-images").innerHTML = '';
-            document.getElementById("disliked-images").innerHTML = '';
-            document.getElementById("button-container").style.display = "block";
-        
-        //    allImageURLs = {};
-            relevantImages = [];
-            nonRelevantImages = [];
-            relevantImagestemp = [];
-            nonRelevantImagestemp = [];
-            selectedImageURLs = {}; 
-            fetch('/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ query: query })
-            })
-            .then(response => response.json())
-            .then(data => {
-                loadingDiv.style.display = "none";
-                const containerDiv = document.createElement("div");
-                containerDiv.className = "image-container";
-                resultsDiv.appendChild(containerDiv);
-        
-                data.image_urls.forEach((url, idx) => {
-                    createImageWithThumbs(containerDiv, url, data.img_ids[idx], false);
-                });
-            })
-            .catch(error => {
-                loadingDiv.style.display = "none";
-                console.error('Error:', error);
-            });
-        }
-
-            
-        
+        let sessionId = null;
         function createImageWithThumbs(containerDiv, url, id) { 
-           
             const imgDiv = document.createElement("div");
             imgDiv.className = "image-item"; 
-            
-          
+        
             const thumbsDiv = document.createElement("div");
             thumbsDiv.className = "thumbs-buttons";
             
             // "Thumbs Up"
             const thumbsUpBtn = document.createElement("button");
             thumbsUpBtn.className = "thumbs-up";
-
-            // Create the SVG element
             const svgUp = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             svgUp.setAttribute("width", "72");
             svgUp.setAttribute("height", "72");
             svgUp.setAttribute("viewBox", "0 0 24 24");
-
-            // Create the path element
             const pathUp = document.createElementNS("http://www.w3.org/2000/svg", "path");
             pathUp.setAttribute("fill", "green");
             pathUp.setAttribute("d", "M2 21h4V9H2v12zM22 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L13.17 1 7.59 6.59C7.22 6.95 7 7.45 7 8v11c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.15-.34.23-.7.23-1.07V10z");
-
-            // Append the path to the SVG
             svgUp.appendChild(pathUp);
-
-            // Append the SVG to the button
             thumbsUpBtn.appendChild(svgUp);
-
             thumbsUpBtn.onclick = function() {
                 handleThumbsUp(url, id);
             };
-
-                        
+        
             // "Thumbs Down"
             const thumbsDownBtn = document.createElement("button");
             thumbsDownBtn.className = "thumbs-down";
-            // Create the SVG element
-            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setAttribute("width", "24");
-            svg.setAttribute("height", "24");
-            svg.setAttribute("viewBox", "0 0 24 24");
-
-            // Create the path element
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("fill", "red");
-            path.setAttribute("d", "M15 3H6c-.83 0-1.54.5-1.84 1.22L1.02 11.3c-.12.27-.19.57-.19.88V15c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L10.83 23l5.58-5.59c.37-.36.59-.86.59-1.41V5c0-1.1-.9-2-2-2z");
-
-            // Append the path to the SVG
-            svg.appendChild(path);
-
-            // Append the SVG to the button
-            thumbsDownBtn.appendChild(svg);
-
+            const svgDown = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svgDown.setAttribute("width", "24");
+            svgDown.setAttribute("height", "24");
+            svgDown.setAttribute("viewBox", "0 0 24 24");
+            const pathDown = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathDown.setAttribute("fill", "red");
+            pathDown.setAttribute("d", "M15 3H6c-.83 0-1.54.5-1.84 1.22L1.02 11.3c-.12.27-.19.57-.19.88V15c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L10.83 23l5.58-5.59c.37-.36.59-.86.59-1.41V5c0-1.1-.9-2-2-2z");
+            svgDown.appendChild(pathDown);
+            thumbsDownBtn.appendChild(svgDown);
             thumbsDownBtn.onclick = function() {
                 handleThumbsDown(url, id);
             };
-            
+        
             thumbsDiv.appendChild(thumbsUpBtn);
             thumbsDiv.appendChild(thumbsDownBtn);
            
@@ -208,19 +166,41 @@
             img.src = url;
             img.id = "image_" + id;
           
-            //  zoom
+            // Zoom
             img.onclick = function() {
                 img.classList.toggle('zoomed2'); 
             };
            
             span.appendChild(img);
+            
+      
+            if (relevantImages.includes(id)) {
+                span.style.border = "5px solid green";
+            } else if (nonRelevantImages.includes(id)) {
+                span.style.border = "5px solid red";
+            } else {
+                span.style.border = "";
+            }
+            
             imgDiv.appendChild(thumbsDiv);
             imgDiv.appendChild(span);
-            containerDiv.appendChild(imgDiv);
-           
-
             
-        }function addPositiveBorder(id) {
+            
+            const idLabel = document.createElement("div");
+            idLabel.className = "image-id-label";
+            idLabel.style.fontSize = "10px";
+            idLabel.style.textAlign = "center";
+            idLabel.style.marginTop = "-5px"; 
+            idLabel.textContent = "ID: " + id;
+   
+            imgDiv.appendChild(idLabel);
+            
+            containerDiv.appendChild(imgDiv);
+        }
+        
+        
+        
+        function addPositiveBorder(id) {
             const span = document.getElementById('image_' + id).parentElement;
             span.style.border = "5px solid green"; 
         }
@@ -256,6 +236,60 @@
             }
         }
         
+        function submitQuery() {
+            
+            const loadingDiv = document.getElementById("loading");
+            loadingDiv.style.display = "block";
+        
+            const query = document.getElementById("query").value;
+            const resultsDiv = document.getElementById("results");
+            
+            resultsDiv.innerHTML = '';
+            const selectedResultsDiv = document.getElementById("selected-results");
+            
+            selectedResultsDiv.innerHTML = '';
+            selectedResultsDiv.classList.add("hidden");
+            resultsDiv.classList.remove("hidden");
+            document.getElementById("liked-images").innerHTML = '';
+            document.getElementById("disliked-images").innerHTML = '';
+            document.getElementById("button-container").style.display = "block";
+        
+        //    allImageURLs = {};
+            relevantImages = [];
+            nonRelevantImages = [];
+            relevantImagestemp = [];
+            nonRelevantImagestemp = [];
+            selectedImageURLs = {}; 
+                    
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = "none";
+
+                // **Memorizza session_id**
+                sessionId = data.session_id;
+
+                const containerDiv = document.createElement("div");
+                containerDiv.className = "image-container";
+                resultsDiv.appendChild(containerDiv);
+
+                data.image_urls.forEach((url, idx) => {
+                    createImageWithThumbs(containerDiv, url, data.img_ids[idx]);
+                });
+            })
+            .catch(error => {
+                loadingDiv.style.display = "none";
+                console.error('Error:', error);
+            });
+        }
+
+            
         function handleThumbsDown(url, id) {
             const span = document.getElementById('image_' + id).parentElement;
         
@@ -287,11 +321,66 @@
         
         function addImageToContainer(url, id, containerId) {
             const container = document.getElementById(containerId);
+        
+          
+            const wrapper = document.createElement("div");
+            wrapper.className = "container-image-wrapper";
+            wrapper.style.position = "relative";
+            wrapper.style.display = "inline-block";
+            wrapper.style.margin = "5px";
+        
+           
             const img = document.createElement("img");
             img.src = url;
-            img.id = `container-image-${id}`; // Unique ID for the image in the container
-            img.className = "styled-image";
-            container.appendChild(img);
+            img.id = `container-image-${id}`;
+            img.className = "styled-image zoomable"; 
+            
+            img.onclick = function() {
+                 img.classList.toggle('zoomed2');
+            };
+        
+           
+            const closeBtn = document.createElement("span");
+            closeBtn.className = "close-btn";
+            closeBtn.textContent = "×"; 
+            closeBtn.style.position = "absolute";
+            closeBtn.style.top = "0";
+            closeBtn.style.right = "0";
+            closeBtn.style.cursor = "pointer";
+          
+            closeBtn.style.backgroundColor = "#ffcccc"; 
+            closeBtn.style.border = "1px solid #ff6666";  
+            closeBtn.style.borderRadius = "50%";
+            closeBtn.style.padding = "2px 5px";
+            closeBtn.style.fontSize = "12px";
+            closeBtn.style.zIndex = "10"; 
+            closeBtn.style.color = "#cc0000"; 
+          closeBtn.onclick = function(e) {
+                 e.stopPropagation(); 
+                 removeSelectedImage(id, containerId);
+            };
+        
+            wrapper.appendChild(img);
+            wrapper.appendChild(closeBtn);
+            container.appendChild(wrapper);
+        }
+        function removeSelectedImage(id, containerId) {
+               if (containerId === "liked-images") {
+                 relevantImages = relevantImages.filter(imageId => imageId !== id);
+                 relevantImagestemp = relevantImagestemp.filter(imageId => imageId !== id);
+            } else if (containerId === "disliked-images") {
+                 nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
+                 nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
+            }
+            
+              const mainImageSpan = document.getElementById('image_' + id)?.parentElement;
+            if (mainImageSpan) {
+                 mainImageSpan.style.border = "";
+            }
+             const imgElement = document.getElementById(`container-image-${id}`);
+            if (imgElement && imgElement.parentElement) {
+                 imgElement.parentElement.remove();
+            }
         }
         
         function removeImageFromContainer(id, containerId) {
@@ -321,75 +410,106 @@
             delete selectedImageURLs[id];
             span.classList.remove("fancychecks_negative");
         }
-
         function saveAndUpdate() {
             const algorithmSelect = document.getElementById("algorithm-select");
-            const selectedAlgorithm = algorithmSelect.options[algorithmSelect.selectedIndex].text.toLowerCase();
+            const selectedAlgorithm = algorithmSelect.value.toLowerCase(); // Usa `value` invece di `text`
         
+             if (!selectedAlgorithm || selectedAlgorithm === "select algorithm") {
+                alert("Please select an algorithm before updating results.");
+                return;
+            }
+        
+             if (!sessionId) {
+                alert("No session ID found. Please perform a search first.");
+                return;
+            }
+        
+             const loadingDiv = document.getElementById("loading");
+            loadingDiv.style.display = "block";
+        
+            const timeout = setTimeout(() => {
+                if (loadingDiv.style.display === "block") {
+                    alert("Update is taking longer than expected. Please try again later.");
+                    loadingDiv.style.display = "none";
+                }
+            }, 10000); 
+        
+          
             fetch('/save_and_update', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     relevant_images_ids: relevantImages,
                     non_relevant_images_ids: nonRelevantImages,
                     relevant_images_ids_temp: relevantImagestemp,
                     non_relevant_images_ids_temp: nonRelevantImagestemp,
                     selected_algorithm: selectedAlgorithm,
+                    session_id: sessionId
                 })
             })
             .then(response => response.json())
             .then(data => {
+               
+                loadingDiv.style.display = "none";
+                clearTimeout(timeout);
+        
                 if (data.status === 'success') {
+            
                     displayUpdatedImages(data);
         
                    
-                    let TimeOfSearch = data.total_time; 
-                    let selectedAlgorithm = data.selected_algorithm;
-                  
                     const timeElement = document.getElementById("time-of-search");
-                    if (TimeOfSearch) {
-                        timeElement.textContent = selectedAlgorithm +" Time: " + TimeOfSearch;
-                    } else {
-                        timeElement.textContent = "Time of Search is not available.";
-                    }
+                    timeElement.textContent = `${data.selected_algorithm} Time: ${data.total_time}`;
+        
+                    relevantImagestemp = [];
+                    nonRelevantImagestemp = [];
+                } else {
+                    alert("An error occurred while updating results. Please try again.");
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                loadingDiv.style.display = "none";
+                alert("Failed to update results. Please check your connection and try again.");
+            });
         }
-                           
-            
         
         function displayUpdatedImages(data) {
-            // Remove the old results container from the DOM
+         
             const resultsDiv = document.getElementById("results");
             if (resultsDiv) {
-                resultsDiv.parentNode.removeChild(resultsDiv);
+                resultsDiv.innerHTML = '';
             }
             
-            // Clear any existing content in the selected results container
+   
             const selectedDiv = document.getElementById("selected-results");
             selectedDiv.innerHTML = '';
-        
-            // Create a new container div for the updated images
+            
+           
             const containerDiv = document.createElement("div");
             containerDiv.className = "image-container";
             selectedDiv.appendChild(containerDiv);
-        
-            // Display new images
+            
             if (data.new_image_urls && data.new_image_urls.length > 0) {
                 data.new_image_urls.forEach((url, idx) => {
-                    // If necessary, pass an additional parameter (like a prefix) to create unique IDs
                     createImageWithThumbs(containerDiv, url, data.new_image_ids[idx]);
                 });
             }
-        
-            // Make the selected results container visible
+            
+            
             selectedDiv.classList.remove("hidden");
+     
+            document.getElementById("content").scrollTop = 0;
+        
+           
+            setTimeout(() => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }, 100);
         }
         
-            
         function setSelectedAlgorithm(algorithm) {
             localStorage.setItem('selectedAlgorithm', algorithm);
         }
