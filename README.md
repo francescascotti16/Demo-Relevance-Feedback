@@ -21,7 +21,7 @@ This repository provides a demo for executing various relevance feedback algorit
 - `demo_functions.py` - Functions used in `demo.py`
 - `preprocessing.ipynb` - Notebook with instructions for data preprocessing
 - `time_exp.ipynb` - Notebook for time-based performance experiments
-
+- `data/` - Utility contains two dataset used in the time experiment:
 
 
 ### 3. Download and Prepare the Dataset
