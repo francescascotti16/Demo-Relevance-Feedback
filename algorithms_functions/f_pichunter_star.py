@@ -66,7 +66,7 @@ def pichunter_single_step(data_df,display_df, relevant_ids,non_relevant_ids,fun_
 
 
     new_prob_values = numerator / denominator 
-    display_df ,time_display= create_display(data_df, new_prob_values, n_display)
+    display_df = create_display(data_df, new_prob_values, n_display)
     end_time = datetime.now()
     total_time_single_step=end_time-start_time
-    return display_df, new_prob_values, total_time_single_step, time_display, time_get_similarity
+    return display_df, new_prob_values, total_time_single_step,
