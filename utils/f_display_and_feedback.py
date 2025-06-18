@@ -54,48 +54,48 @@ def get_actions(display_df_t, groundtruth_dic, already_selected_images, k_pos=-1
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-
 def order_first_display(df, n_display, initial_query, similarity="euclidean"):
     """
-    Ordina le colonne del DataFrame in base alla distanza (euclidea o coseno) 
-    dall'embedding iniziale, e restituisce le prime n_display colonne.
+    Orders the columns of the DataFrame based on their distance (Euclidean or cosine)
+    from the initial query embedding, and returns the top n_display columns.
 
     Parameters
     ----------
     df : pd.DataFrame
-        DataFrame con vettori immagine come colonne.
+        DataFrame with image vectors as columns.
     n_display : int
-        Numero di immagini da selezionare.
+        Number of images to select.
     initial_query : np.ndarray
-        Vettore di query iniziale, forma (n_features,) o (n_features, 1).
+        Initial query vector, shape (n_features,) or (n_features, 1).
     similarity : str
-        Tipo di distanza da usare: "euclidean" o "cosine".
+        Type of distance to use: "euclidean" or "cosine".
     """
-    # Rimuove l'ultima riga del DataFrame
+    # Removes the last row of the DataFrame
     df = df.iloc[:-1]
 
-    # Assicura che initial_query sia di forma (n_features, 1)
+    # Ensures that initial_query has shape (n_features, 1)
     query_vec = initial_query.reshape(-1, 1)
 
     if similarity == "cosine":
-        # Calcola la similarità coseno e ordina in ordine decrescente (più simile → più alto)
+        # Compute cosine similarity and sort in descending order (more similar → higher)
         sims = cosine_similarity(df.values.T, query_vec.T).flatten()
-        sorted_idx = np.argsort(-sims)  # meno simile in fondo
+        sorted_idx = np.argsort(-sims)  # less similar at the end
     else:
-        # Distanza euclidea classica
+        # Compute classic Euclidean distance
         dists = np.linalg.norm(df.values - query_vec, axis=0)
         sorted_idx = np.argsort(dists)
 
-    # Seleziona i primi n_display indici
+    # Select the top n_display indices
     first_sorted_ids = sorted_idx[:n_display]
 
-    # Colonne corrispondenti
+    # Get the corresponding columns
     sorted_columns = df.columns[first_sorted_ids]
 
-    # Restituisce solo le colonne selezionate
+    # Return only the selected columns
     first_display = df.loc[:, sorted_columns]
     
     return first_display
+
 
 def sample_first_display(df, seed,n_display, indexes_positive_initial_images):
     '''
