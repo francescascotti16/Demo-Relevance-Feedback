@@ -22,28 +22,32 @@
             </a>
         </div>
 
-        <!-- Menu (Left Column) -->
-        <div id="menu">
-            <div id="button-container" class="button-container" style="display:block;">
-                <input type="text" maxlength="100" id="query" name="query" class="query-container" placeholder="Enter your query here">
-                <div class="button-row">
-                    <button class="save-button" onclick="submitQuery()">Search</button>
-                    <span class="info-icon" onclick="toggleInfoMessage()">i</span>
-                  </div>
-                <div id="info-message" class="info-message" style="display:none;">
-                Please note that the top 500 results of the text-based search will be deterministically shuffled to form the initial display (in order to better assess the subsequent performance of the relevance feedback methods).
-                </div>
-                <div id="loading" style="display:none;">
-                    <div class="spinner"></div>
-                </div>
-                <select id="algorithm-select" class="dropbtn">
-                    <option disabled selected>Select Algorithm</option>
-                    <option value="Rocchio">Rocchio</option>
-                    <option value="PicHunter">PicHunter</option>
-                    <option value="PicHunter-star">PicHunter-star</option>
-                    <option value="SVM">SVM</option>
-                    <option value="Polyadic-SED">Polyadic-SED</option>
-                    <option value="Polyadic-MSED">Polyadic-MSED</option>
+    <div id="menu" >
+
+    <div id="button-container" class="button-container" style="display:block;">
+        <input type="text" maxlength="100" id="query" name="query" class="query-container" placeholder="Enter your query here">
+        <div class="button-row">
+            <button class="save-button" onclick="submitQuery()">Search</button>
+            <!-- <span class="info-icon" onclick="toggleInfoMessage()">i</span> -->
+        </div>
+        <!--
+        <div id="info-message" class="info-message" style="display:none;">
+            Please note that the top 500 results of the text-based search will be deterministically shuffled to form the initial display (in order to better assess the subsequent performance of the relevance feedback methods).
+        </div>
+        -->
+        <div id="loading" style="display:none;">
+            <div class="spinner"></div>
+        </div>
+        <select id="algorithm-select" class="dropbtn">
+            <option disabled selected>Select Algorithm</option>
+            <option value="Rocchio">Rocchio</option>
+            <option value="PicHunter">PicHunter</option>
+            <option value="PicHunter-star">PicHunter-star</option>
+            <option value="SVM">SVM</option>
+            <option value="Polyadic-SED">Polyadic-SED</option>
+            <option value="Polyadic-MSED">Polyadic-MSED</option>
+        </select>
+
                    
                 </select>
                 <button onclick="saveAndUpdate()" class="save-button">Update Results</button>
@@ -173,14 +177,16 @@
            
             span.appendChild(img);
             
-      
-            if (relevantImages.includes(id)) {
-                span.style.border = "5px solid green";
+        if (relevantImages.includes(id)) {
+            span.style.boxShadow =
+                "0 0 0 2px white inset, 0 0 0 7px green";
             } else if (nonRelevantImages.includes(id)) {
-                span.style.border = "5px solid red";
+            span.style.boxShadow =
+                "0 0 0 2px white inset, 0 0 0 7px red";
             } else {
-                span.style.border = "";
-            }
+            span.style.boxShadow = "";
+}
+
             
             imgDiv.appendChild(thumbsDiv);
             imgDiv.appendChild(span);
@@ -202,13 +208,14 @@
         
         function addPositiveBorder(id) {
             const span = document.getElementById('image_' + id).parentElement;
-            span.style.border = "5px solid green"; 
+            span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 5px green";
         }
-        
+
         function addNegativeBorder(id) {
             const span = document.getElementById('image_' + id).parentElement;
-            span.style.border = "5px solid red"; 
+            span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 5px red";
         }
+
         
         function handleThumbsUp(url, id) {
             const span = document.getElementById('image_' + id).parentElement;

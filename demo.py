@@ -8,7 +8,7 @@ import tqdm
 import uuid
 from collections import deque
 # General functions
-
+import numpy as np
 from utils.f_process_data import *
 from utils.f_display_and_feedback import *
 
@@ -19,7 +19,7 @@ from algorithms_functions.f_svm import *
 from utils.functions_similarity_metrics import *
 from algorithms_functions.f_polyquery_msed_logscale import *
 from algorithms_functions.f_polyadic_sed import *
-from utils.demo_functions import *
+from utils.demo_functions import fetch_text_feature, create_dataframe_from_results, compute_first_probability
 
 # Indexed data functions 
 from utils.f_files import *
@@ -62,6 +62,7 @@ indexed_data_logistic = loaded_data['indexed_data_logistic']
 query_value_rocchio = None
 
 
+query_value_rocchio_log= None
 new_prob_values_pichunter_star=None
 new_prob_values_pic=None
 score_value_polyadic= None
@@ -72,11 +73,10 @@ precomputed_dict_polyquery_msed_log_value=None
 entropy_dict_value=None
 score_value_polyquery_msed_log=None
 score_value_polyadic_jsd=None
-
 precomputed_dict_polyquery_sed_log_value=None
 entropy_dict_value_sed=None
 score_value_polyquery_sed_log=None
-
+initial_prob_pichunter = None
 @app.route('/')
 def index():
     return send_from_directory('static', 'demo.html')
@@ -96,12 +96,12 @@ def search(n_display=display_number):
     if len(sessions) >= MAX_SESSIONS:
         removed_session = sessions.popleft()
         print(f"Session removed: {removed_session}")
-    
-    # new session
     sessions.append(session_id)
     print(f"New session added: {session_id}")
     session_data[session_id] = {
         "query_value_rocchio": None,
+        "query_value_rocchio_log": None,
+        "query_value_decap": None,
         "new_prob_values_pichunter_star": None,
         "new_prob_values_pic": None,
         "score_value_polyadic": None,
@@ -114,19 +114,24 @@ def search(n_display=display_number):
         "score_value_polyadic_jsd": None,
         "precomputed_dict_polyquery_sed_log_value": None,
         "entropy_dict_value_sed": None,
-        "score_value_polyquery_sed_log": None
+        "score_value_polyquery_sed_log": None,
+        "query_value_svm": None,
+        "initial_prob_pichunter": None,
     }
+    # new session
+    
     host = "https://visione.isti.cnr.it"
     textual_mode = "clip-laion"
     max_rank =10000
-    max_shuffle = 500
+    max_shuffle = 10000
     query = json.dumps({"query": [{"textual": query_orig}], "parameters": [{"textualMode": textual_mode, "occur": "and", "simReorder": "false"}]})
-    query_features_total=fetch_text_feature(query)
-   
    
     
-    results = requests.post(host + '/services/core/search', data={'query': query, 'sortbyvideo': False, 'maxres': max_rank}, verify=False)
+    results = requests.post(host + '/services/core/search', data={'query': query, 'sortbyvideo': False, 'maxres': max_rank})
     data = results.json()
+    initial_query_emb = np.array(fetch_text_feature(query), dtype=np.float64)
+    initial_query_emb = np.squeeze(initial_query_emb).reshape(-1, 1)
+    initial_query_emb_log = logistic(initial_query_emb)
 
     # Save the JSON data to a file called 'results.json'
     with open("results.json", "w") as outfile:
@@ -140,31 +145,61 @@ def search(n_display=display_number):
     data_df = create_dataframe_from_results(df_results, 
                                             index_2_id, 
                                             indexed_data, 
-                                            indexed_ids,shuffle=True, seed=42)
-   # img_ids= data_df.columns.tolist()[:n_display]
-  #  print('ooo',img_ids[0:3])
+                                            indexed_ids)
+   
+                    
+    
+       
+   
+    
     df_display_col_names = df_results['imgId'].head(display_number).tolist()
     df_display = data_df[df_display_col_names]
-    
+   
     data_df_log = create_dataframe_from_results(df_results, 
                                                 index_2_id, 
                                                 indexed_data_logistic, 
-                                                indexed_ids,shuffle=True, seed=42)
+                                                indexed_ids)
     
    
 
     img_ids= data_df.columns.tolist()[:n_display]
-    print('ooo',img_ids[0:3])
     
+    # Calcolo entropy_dict (solo se non precomputato)
+    entropy_dict_log = {img_id: shannon_entropy(data_df_log[img_id]) for img_id in data_df_log.columns}
+
+    # Calcolo di rho₀ = s_poly(q0, oi)
+    rho0_polyquery_msed_log = get_msed_logscale_sim_vec(data_df_log, entropy_dict_log, initial_query_emb_log)
+    # Calcolo entropia per Polyadic-SED
+    entropy_dict_log_sed = {img_id: shannon_entropy(data_df_log[img_id]) for img_id in data_df_log.columns}
+
+    # Calcolo rho₀ (score iniziale)
+    rho0_polyquery_sed_log = get_sed_logscale_sim_vec(data_df_log, entropy_dict_log_sed, initial_query_emb_log)
+
+# Salvataggio in session_data
+
+        
+    initial_prob_pichunter= compute_first_probability(data_df, initial_query_emb)
     df_display_col_names_log = df_results['imgId'].head(display_number).tolist()
     df_display_log = data_df_log[df_display_col_names_log]
     session_data[session_id]["data_df"] = data_df
     session_data[session_id]["df_display"] = df_display
     session_data[session_id]["data_df_log"] = data_df_log
     session_data[session_id]["df_display_log"] = df_display_log
+    session_data[session_id]["query_value_rocchio"] = initial_query_emb
+    session_data[session_id]["score_value_polyadic"] = rho0_polyquery_sed_log
+    session_data[session_id]["entropy_dict_value"] = entropy_dict_log_sed
+    session_data[session_id]["query_value_decap"] = initial_query_emb_log
+
+    session_data[session_id]["new_prob_values_pichunter_star"] = None
+    session_data[session_id]["new_prob_values_pic"] = None
+    session_data[session_id]["query_value_svm"] = initial_query_emb
+    session_data[session_id]["initial_prob_pichunter"] = initial_prob_pichunter
+    session_data[session_id]["score_value_polyquery_msed_log"] = rho0_polyquery_msed_log
+    session_data[session_id]["entropy_dict_value"] = entropy_dict_log
+    session_data[session_id]["query_value_decap"] = initial_query_emb_log
     print('shape of data_df_log:', data_df_log.shape)
     image_urls = ["https://visione.isti.cnr.it/frames/{}/{}.png".format(img_id.split('-')[0], img_id) for img_id in img_ids]
-  
+    
 
     return jsonify({'image_urls': image_urls, 'img_ids': img_ids,'session_id': session_id,})
 @app.route('/save_and_update', methods=['POST'])
@@ -216,65 +251,85 @@ def save_and_update():
     with open('non_relevant_images_ids.json', 'w') as f_non_relevant:
         json.dump({'non_relevant_images_ids': non_relevant_image_ids}, f_non_relevant)
 
-    
+    #########################################################################
+    #### ROCCHIO
+    #########################################################################
     if selected_algorithm == 'rocchio':
-        df_display, new_query, _, time_of_search, _, _ = rocchio_single_step(
+        df_display, new_query, time_of_search,  = rocchio_single_step(
             data_df, df_display, relevant_image_ids, non_relevant_image_ids,
-            alpha=0.75, beta=1, gamma=0.75, fun_name="euclidean",
+            alpha=1.2, beta=2.4, gamma=2.6, fun_name="euclidean",
             initial_query=session_data[session_id]["query_value_rocchio"]
         )
         session_data[session_id]["query_value_rocchio"] = new_query
-
+  
+    #########################################################################
+    #### PICHUNTER STAR
+    ######################################################################### 
     elif selected_algorithm == 'pichunter-star':
-        df_display, new_prob_values_star, time_of_search, _, _ = pichunter_single_step_star(
+        df_display, new_prob_values_star, time_of_search= pichunter_single_step_star(
             data_df, df_display, relevant_image_ids_temp, non_relevant_image_ids_temp,
-            fun_name="softmin", initial_prob=session_data[session_id]["new_prob_values_pichunter_star"],
+            fun_name="softmin", initial_prob=session_data[session_id]["initial_prob_pichunter"],
             temperature=82.10553
         )
-        session_data[session_id]["new_prob_values_pichunter_star"] = new_prob_values_star
-
+        session_data[session_id]["initial_prob_pichunter"] = new_prob_values_star
+    
+    #########################################################################
+    #### PICHUNTER
+    ######################################################################### 
     elif selected_algorithm == 'pichunter':
-        df_display, new_prob_values, time_of_search, _, _ = pichunter_single_step_star(
+        df_display, new_prob_values, time_of_search = pichunter_single_step_star(
             data_df, df_display, relevant_image_ids_temp, [],
-            fun_name="softmin", initial_prob=session_data[session_id]["new_prob_values_pic"],
+            fun_name="softmin", initial_prob=session_data[session_id]["initial_prob_pichunter"],
             temperature=82.10553
         )
-        session_data[session_id]["new_prob_values_pic"] = new_prob_values
-
+        session_data[session_id]["initial_prob_pichunter"] = new_prob_values
+    
+    #########################################################################
+    #### SVM
+    ######################################################################### 
     elif selected_algorithm == 'svm':
-        df_display, _, time_of_search, _, _, _ = svm_single_step(
-            data_df, df_display, relevant_image_ids, non_relevant_image_ids
+        df_display, _, time_of_search,  = svm_single_step(
+            data_df, df_display, relevant_image_ids, non_relevant_image_ids,query=session_data[session_id]["query_value_svm"],
         )
-
+    
+    #########################################################################
+    #### POLYADIC SED
+    ######################################################################### 
     elif selected_algorithm == 'polyadic-sed':
-        df_display, new_scores, precomputed_dict_sed, entropy_dict_sed, time_of_search, _, _ = poly_sed_logscale_single_step(
-            session_data[session_id]["data_df_log"], session_data[session_id]["df_display_log"],
-            relevant_image_ids, non_relevant_image_ids,
-            precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_sed_log_value"],
-            alpha=0.75, beta=1, gamma=0.75, initial_query=None,
-            initial_scores=session_data[session_id]["score_value_polyadic"],
-            entropy_dict=session_data[session_id]["entropy_dict_value"]
-        )
-        session_data[session_id]["score_value_polyadic"] = new_scores
-        session_data[session_id]["precomputed_dict_polyquery_sed_log_value"] = precomputed_dict_sed
-        session_data[session_id]["entropy_dict_value"] = entropy_dict_sed
+     
+        df_display, new_scores, precomputed_dict_sed, entropy_dict_sed, time_of_search = poly_sed_logscale_single_step(
+        session_data[session_id]["data_df_log"], session_data[session_id]["df_display_log"],
+        relevant_image_ids, non_relevant_image_ids,
+        precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_sed_log_value"],
+        alpha=1, beta=1.6, gamma=1.6,
+        initial_query=session_data[session_id]["query_value_decap"],  # ✅ embedding log della query
+        initial_scores=session_data[session_id]["score_value_polyadic"],  # ✅ rho0
+        entropy_dict=session_data[session_id]["entropy_dict_value"]
+    )
 
+    
+    #########################################################################
+    #### POLYADIC MSED
+    #########################################################################
     elif selected_algorithm == 'polyadic-msed':
-        df_display, new_scores, precomputed_dict, entropy_dict, time_of_search, _, _ = poly_msed_logscale_single_step(
-            session_data[session_id]["data_df_log"], session_data[session_id]["df_display_log"],
-            relevant_image_ids, non_relevant_image_ids,
-            precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_msed_log_value"],
-            alpha=0.75, beta=1, gamma=0.75, initial_query=None,
-            initial_scores=session_data[session_id]["score_value_polyquery_msed_log"],
-            entropy_dict=session_data[session_id]["entropy_dict_value"]
-        )
-        session_data[session_id]["score_value_polyquery_msed_log"] = new_scores
-        session_data[session_id]["precomputed_dict_polyquery_msed_log_value"] = precomputed_dict
-        session_data[session_id]["entropy_dict_value"] = entropy_dict
+        df_display, new_scores, precomputed_dict, entropy_dict, time_of_search = poly_msed_logscale_single_step(
+        session_data[session_id]["data_df_log"], 
+        session_data[session_id]["df_display_log"],
+        relevant_image_ids, 
+        non_relevant_image_ids,
+        precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_msed_log_value"],
+        alpha=0.4, 
+        beta=2, 
+        gamma=1.4, 
+        initial_query=session_data[session_id]["query_value_decap"],  # ✅ usa la query logaritmica
+        initial_scores=session_data[session_id]["score_value_polyquery_msed_log"],  # ✅ usa rho0
+        entropy_dict=session_data[session_id]["entropy_dict_value"]
+    )
+
 
     else:
         print("Errore: Algoritmo non riconosciuto, viene utilizzato Rocchio come fallback.")
-        df_display, new_query, _, time_of_search, _, _ = rocchio_single_step(
+        df_display, new_query,time_of_search, = rocchio_single_step(
             data_df, df_display, relevant_image_ids_temp, non_relevant_image_ids_temp,
             alpha=0.75, beta=1, gamma=0.75, fun_name="euclidean",
             initial_query=session_data[session_id]["query_value_rocchio"]
