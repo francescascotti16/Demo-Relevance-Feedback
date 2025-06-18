@@ -64,7 +64,7 @@ def shannon_entropy(x):
  
     end_time = datetime.now()
     total_time = end_time - start_time
-    return shannon_entropy, total_time
+    return shannon_entropy
 
 
 def sed(x, y):
@@ -312,7 +312,6 @@ def get_distance_matrix(data1_df, dataset_df, fun_name="euclidean"):
     fun_name: similatity function to calculate 
 
     '''
-    start_time = datetime.now()
     # Function to get the similarity matrix between the display and the whole dataset
     n = data1_df.shape[1]
     m = dataset_df.shape[1]
@@ -330,8 +329,8 @@ def get_distance_matrix(data1_df, dataset_df, fun_name="euclidean"):
          print(f"ERR The function {fun_name} is not implemented. Using Euclidean distance.")  
          distance_matrix=euclidean_distances(dataset_df.T, data1_df.T)
     end_time = datetime.now()
-    total_time=end_time-start_time
-    return distance_matrix , total_time
+   
+    return distance_matrix 
 
 
 
