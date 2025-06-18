@@ -1,6 +1,31 @@
 import requests
-
 import pandas as pd
+import numpy as np
+
+def compute_first_probability(data_df, initial_query_emb, tau=11.6):
+    """
+    Compute the first probability distribution based on the initial query embedding.
+    
+    Parameters:
+    - data_df (pd.DataFrame): DataFrame with embedding vectors (rows = features).
+    - initial_query_emb (np.ndarray): Initial query embedding vector.
+    - tau (float): Temperature parameter for softmin. Default is 11.6.
+    
+    Returns:
+    - np.ndarray: Probability distribution as a 1D array.
+    """
+    initial_query_emb = initial_query_emb.reshape(-1, 1)  # Ensure column vector
+    arr = data_df.values.astype(np.float64)              # Convert to numpy array
+    diff = arr - initial_query_emb                       # Element-wise difference
+    dist = np.linalg.norm(diff, axis=0)                  # Euclidean distances
+
+    num = np.exp(-dist / tau)                            # Softmin numerator
+    den = np.sum(num)                                    # Softmin denominator
+
+    if not np.isfinite(den) or den == 0:                 # Check for valid denominator
+        return np.zeros_like(num)
+
+    return num / den                                     # Return probability distribution
 
 
 def fetch_text_feature(text):
@@ -10,7 +35,7 @@ def fetch_text_feature(text):
     
     try:
         # Send a GET request to the URL
-        response = requests.get(url)
+        response = requests.get(url,verify=False)
         
         # Check if the response is successful
         response.raise_for_status()  # Raises HTTPError for bad responses
@@ -29,10 +54,7 @@ def fetch_text_feature(text):
         # Handle any error that occurs during the request
         print(f"Error: {e}")
 
-import pandas as pd
-import numpy as np
-
-def create_dataframe_from_results(df_results, index_2_id, indexed_data, indexed_ids, shuffle=True, seed=42):
+def create_dataframe_from_results(df_results, index_2_id, indexed_data, indexed_ids):
     """
     Create a DataFrame from results CSV file, using index mapping and indexed data.
 
@@ -41,36 +63,22 @@ def create_dataframe_from_results(df_results, index_2_id, indexed_data, indexed_
     - index_2_id (dict): Dictionary mapping ids to their corresponding indices.
     - indexed_data (numpy.ndarray): Array containing indexed data.
     - indexed_ids (numpy.ndarray): Array containing indexed ids.
-    - shuffle (bool, optional): Whether to shuffle the columns. Default is True.
-    - seed (int, optional): Random seed for shuffling the columns. Default is 42.
 
     Returns:
-    - pd.DataFrame: DataFrame with or without shuffled columns, based on shuffle parameter.
+    - pd.DataFrame: DataFrame with features in the same column order as in df_results['imgId'].
     """
     ids_to_retrieve = df_results['imgId'].tolist()
 
-    # Retrieve indices and sort them
-    indices_to_retrieve = [index_2_id.get(id) for id in ids_to_retrieve]
-    indices_to_retrieve = [idx for idx in indices_to_retrieve if idx is not None]  # Filter out None values
-    indices_to_retrieve.sort()
+    ids_sorted = []
+    features = []
 
-    # Sort ids according to retrieved indices
-    ids_sorted = [indexed_ids[i].decode('utf-8') for i in indices_to_retrieve]
+    for img_id in ids_to_retrieve:
+        idx = index_2_id.get(img_id)
+        if idx is not None:
+            ids_sorted.append(indexed_ids[idx].decode('utf-8'))
+            features.append(indexed_data[idx])
 
-    # Create DataFrame with columns named by ids_sorted
-    df = pd.DataFrame(columns=ids_sorted)
+    # Transpose to get features as columns
+    df = pd.DataFrame(data=np.array(features).T, columns=ids_sorted)
 
-    # Populate DataFrame with corresponding features
-    features = indexed_data[indices_to_retrieve]
-
-    for i, col in enumerate(df.columns):
-        df[col] = pd.Series(features[i])
-
-    # Shuffle the columns if shuffle=True
-    if shuffle:
-        np.random.seed(seed)
-        shuffled_columns = np.random.permutation(df.columns)
-        df = df[shuffled_columns]
-
-    return df  # Return the DataFrame
-
+    return df
