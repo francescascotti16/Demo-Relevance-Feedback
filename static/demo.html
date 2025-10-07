@@ -11,7 +11,7 @@
 <body>
     <div id="page">
 
-        <!-- GitHub Icon in Top-Right Corner -->
+        
         <div style="position: absolute; top: 10px; left: 20px; z-index: 1000;">
             <a href="https://github.com/francescascotti16/Demo-Relevance-Feedback" target="_blank" title="View on GitHub">
                 <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" 
@@ -25,34 +25,43 @@
     <div id="menu" >
 
     <div id="button-container" class="button-container" style="display:block;">
-        <input type="text" maxlength="100" id="query" name="query" class="query-container" placeholder="Enter your query here">
+       
         <div class="button-row">
-            <button class="save-button" onclick="submitQuery()">Search</button>
-            <!-- <span class="info-icon" onclick="toggleInfoMessage()">i</span> -->
+            <input type="text" maxlength="100" id="query" name="query" class="query-container" placeholder="Enter your query here">
+            <button id="search-update-button" class="save-button" onclick="handleSearchOrUpdate()">Search</button>
+
+           
         </div>
-        <!--
-        <div id="info-message" class="info-message" style="display:none;">
-            Please note that the top 500 results of the text-based search will be deterministically shuffled to form the initial display (in order to better assess the subsequent performance of the relevance feedback methods).
-        </div>
-        -->
+
+
+       
         <div id="loading" style="display:none;">
             <div class="spinner"></div>
         </div>
-        <select id="algorithm-select" class="dropbtn">
-            <option disabled selected>Select Algorithm</option>
+        <div class="action-columns">
+       
+        <div class="column">
+            <select id="algorithm-select" class="dropbtn">
+            <option disabled selected>Select an algorithm or compare all</option>
             <option value="Rocchio">Rocchio</option>
             <option value="PicHunter">PicHunter</option>
             <option value="PicHunter-star">PicHunter-star</option>
             <option value="SVM">SVM</option>
             <option value="Polyadic-SED">Polyadic-SED</option>
             <option value="Polyadic-MSED">Polyadic-MSED</option>
-        </select>
+            <option value="Compare All">Compare All</option> 
+            
+            </select>
+            
+            
+            <button class="clear-button" onclick="clearPage()">Clear ↺</button>
 
-                   
-                </select>
-                <button onclick="saveAndUpdate()" class="save-button">Update Results</button>
+        </div>
+            
+        </div>
+
                 <div id="images-container" class="images-container">
-                    <!-- Liked Images -->
+                 
                     <div id="liked-images-container">
                         <h3>
                             Liked Images
@@ -63,7 +72,7 @@
                         <div id="liked-images" class="positive-images-container"></div>
                     </div>
                 
-                    <!-- Disliked Images -->
+                   
                     <div id="disliked-images-container">
                         <h4>
                             Disliked Images
@@ -80,12 +89,22 @@
             </div>
         </div>
     
-        <!-- Content Section (Right Column) -->
+       
         <div id="content">
+            <content-title  id="content-title" class="content-title" ></content-title >
             <div id="image-container"></div>
             <div id="results"></div>
             <div id="selected-results" class="hidden"></div>
         </div>
+
+
+    </div>
+ 
+    <div id="custom-alert" style="display:none;">
+    <div id="custom-alert-box" role="alertdialog" aria-modal="true" aria-labelledby="custom-alert-message">
+        <button id="custom-alert-close" class="alert-close" aria-label="Exit">×</button>
+        <p id="custom-alert-message"></p>
+    </div>
     </div>
     <script>
         function toggleInfoMessage() {
@@ -97,37 +116,122 @@
           }
         }
       </script>
+
 </body>
 
     
-        <!-- Content Section (Right Column) -->
-        <div id="content">
-
-               
-                <div id="image-container"></div>
-                <div id="results"></div>
-                <div id="selected-results" class="hidden"></div>
-            
-        </div>
-    </div>
 
     <script>
-       
+       let initialResults = { urls: [], ids: [] };
+       const INITIAL_RESULTS_MAX = 300; 
+
           
         let selectedImageURLs = {};
+        let hasSearched = false;
+
         //let allImageURLs = {};
         let relevantImages = [];
         let nonRelevantImages = [];
         let relevantImagestemp = [];
         let nonRelevantImagestemp = [];
         let sessionId = null;
+        let svmWarnedOnlyPositives = false; 
+
+     
+        let alertAutoHideTimer = null;
+        function setContentTitle(text) {
+            const h = document.getElementById("content-title");
+            if (!h) return;
+            if (text && text.trim()) {
+                h.textContent = text;
+                h.style.display = "block";
+            } else {
+                h.textContent = "";
+                h.style.display = "none";
+            }
+            }
+
+          
+            const HUMAN_ALGO = {
+            'rocchio': 'Rocchio',
+            'pichunter': 'PicHunter',
+            'pichunter-star': 'PicHunter-star',
+            'svm': 'SVM',
+            'polyadic-sed': 'Polyadic-SED',
+            'polyadic-msed': 'Polyadic-MSED',
+            'compare all': 'Compare All'
+            };
+
+        function showAlert(message, {variant = "info", autoHideMs = 15000} = {}) {
+        const overlay = document.getElementById("custom-alert");
+        const box = document.getElementById("custom-alert-box");
+        const msg = document.getElementById("custom-alert-message");
+        const closeBtn = document.getElementById("custom-alert-close");
+
+       
+        box.classList.remove("alert--info","alert--warning","alert--error","alert--success");
+        box.classList.add(`alert--${variant}`);
+
+        msg.textContent = message;
+        overlay.style.display = "flex";
+
+       
+        if (alertAutoHideTimer) {
+            clearTimeout(alertAutoHideTimer);
+            alertAutoHideTimer = null;
+        }
+        if (autoHideMs && autoHideMs > 0) {
+            alertAutoHideTimer = setTimeout(hideAlert, autoHideMs);
+        }
+
+       
+        closeBtn.onclick = hideAlert;
+        overlay.onclick = (e) => {
+        
+            if (e.target === overlay) hideAlert();
+        };
+
+        document.addEventListener("keydown", escCloser);
+        }
+
+        function hideAlert() {
+        const overlay = document.getElementById("custom-alert");
+        overlay.style.display = "none";
+        if (alertAutoHideTimer) {
+            clearTimeout(alertAutoHideTimer);
+            alertAutoHideTimer = null;
+        }
+        document.removeEventListener("keydown", escCloser);
+        }
+
+        function escCloser(e) {
+        if (e.key === "Escape") hideAlert();
+        }
+
+    
+
+
+        function handleSearchOrUpdate() {
+            if (!hasSearched) {
+                submitQuery(); 
+                hasSearched = true;
+                const btn = document.getElementById("search-update-button");
+                btn.textContent = "Update";
+                btn.onclick = saveAndUpdate; 
+            } else {
+                saveAndUpdate(); 
+            }
+        }
+
+
         function createImageWithThumbs(containerDiv, url, id) { 
             const imgDiv = document.createElement("div");
             imgDiv.className = "image-item"; 
         
             const thumbsDiv = document.createElement("div");
             thumbsDiv.className = "thumbs-buttons";
-            
+            createImageWithThumbs._uid = createImageWithThumbs._uid || 0;
+
             // "Thumbs Up"
             const thumbsUpBtn = document.createElement("button");
             thumbsUpBtn.className = "thumbs-up";
@@ -168,7 +272,10 @@
             
             const img = document.createElement("img");
             img.src = url;
-            img.id = "image_" + id;
+            const uid = ++createImageWithThumbs._uid;
+            img.id = `image_${id}_${uid}`;
+         
+            img.setAttribute('data-img-id', String(id));
           
             // Zoom
             img.onclick = function() {
@@ -177,71 +284,67 @@
            
             span.appendChild(img);
             
-        if (relevantImages.includes(id)) {
-            span.style.boxShadow =
-                "0 0 0 2px white inset, 0 0 0 7px green";
-            } else if (nonRelevantImages.includes(id)) {
-            span.style.boxShadow =
-                "0 0 0 2px white inset, 0 0 0 7px red";
-            } else {
-            span.style.boxShadow = "";
+            if (relevantImages.includes(id)) {
+                span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 3px green";
+                } else if (nonRelevantImages.includes(id)) {
+                span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 3px red";
+                } else {
+                span.style.boxShadow = "";
 }
 
+
             
-            imgDiv.appendChild(thumbsDiv);
             imgDiv.appendChild(span);
+            imgDiv.appendChild(thumbsDiv);
             
             
-            const idLabel = document.createElement("div");
-            idLabel.className = "image-id-label";
-            idLabel.style.fontSize = "10px";
-            idLabel.style.textAlign = "center";
-            idLabel.style.marginTop = "-5px"; 
-            idLabel.textContent = "ID: " + id;
+          //   const idLabel = document.createElement("div");
+          //   idLabel.className = "image-id-label";
+          //   idLabel.style.fontSize = "10px";
+          //   idLabel.style.textAlign = "center";
+           //  idLabel.style.marginTop = "-5px"; 
+           //  idLabel.textContent = "ID: " + id;
    
-            imgDiv.appendChild(idLabel);
+           //  imgDiv.appendChild(idLabel);
             
             containerDiv.appendChild(imgDiv);
         }
         
         
         
-        function addPositiveBorder(id) {
-            const span = document.getElementById('image_' + id).parentElement;
-            span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 5px green";
+       function addPositiveBorder(id) {
+        setBorderForAllInstances(id, 'green');
         }
 
         function addNegativeBorder(id) {
-            const span = document.getElementById('image_' + id).parentElement;
-            span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 5px red";
+        setBorderForAllInstances(id, 'red');
         }
+        function renderInitialResultsBox(parentGrid) {
+            if (!initialResults.urls || initialResults.urls.length === 0) return;
+
+            const box = document.createElement("div");
+            box.className = "method-box method-box--initial"; 
+
+            const title = document.createElement("h2");
+            title.textContent = "INITIAL RESULTS";
+        
+            box.appendChild(title);
+
+            const imagesDiv = document.createElement("div");
+            imagesDiv.className = "method-images";
+
+            const maxN = Math.min(INITIAL_RESULTS_MAX, initialResults.urls.length);
+            for (let i = 0; i < maxN; i++) {
+                createImageWithThumbs(imagesDiv, initialResults.urls[i], initialResults.ids[i]);
+            }
+
+            box.appendChild(imagesDiv);
+            parentGrid.appendChild(box); 
+            }
+
+
 
         
-        function handleThumbsUp(url, id) {
-            const span = document.getElementById('image_' + id).parentElement;
-        
-            // Remove from the Disliked Images container if present
-            if (nonRelevantImages.includes(id)) {
-                removeFromNonRelevant(id);
-                removeImageFromContainer(id, "disliked-images");
-                addPositiveBorder(id);
-            }
-        
-            // Toggle in the Liked Images container
-            if (!relevantImages.includes(id)) {
-                relevantImages.push(id);
-                relevantImagestemp.push(id);
-                selectedImageURLs[id] = url;
-                addPositiveBorder(id);
-                addImageToContainer(url, id, "liked-images");
-            } else {
-                relevantImages = relevantImages.filter(imageId => imageId !== id);
-                relevantImagestemp = relevantImagestemp.filter(imageId => imageId !== id);
-                delete selectedImageURLs[id];
-                span.style.border = ""; // Rimuove il bordo verde
-                removeImageFromContainer(id, "liked-images");
-            }
-        }
         
         function submitQuery() {
             
@@ -261,7 +364,7 @@
             document.getElementById("disliked-images").innerHTML = '';
             document.getElementById("button-container").style.display = "block";
         
-        //    allImageURLs = {};
+        
             relevantImages = [];
             nonRelevantImages = [];
             relevantImagestemp = [];
@@ -279,8 +382,11 @@
             .then(data => {
                 loadingDiv.style.display = "none";
 
-                // **Memorizza session_id**
+         
                 sessionId = data.session_id;
+              
+                initialResults.urls = data.image_urls || [];
+                initialResults.ids  = data.img_ids    || [];
 
                 const containerDiv = document.createElement("div");
                 containerDiv.className = "image-container";
@@ -292,104 +398,142 @@
             })
             .catch(error => {
                 loadingDiv.style.display = "none";
-                console.error('Error:', error);
+                console.error('Error: ', error );
             });
         }
 
-            
-        function handleThumbsDown(url, id) {
-            const span = document.getElementById('image_' + id).parentElement;
+      
         
-            // Remove from the Liked Images container if present
+        
+    
+    function removeSelectedImage(id, containerId) {
+  
+    if (containerId === "liked-images") {
+        relevantImages = relevantImages.filter(i => i !== id);
+        relevantImagestemp = relevantImagestemp.filter(i => i !== id);
+    } else if (containerId === "disliked-images") {
+        nonRelevantImages = nonRelevantImages.filter(i => i !== id);
+        nonRelevantImagestemp = nonRelevantImagestemp.filter(i => i !== id);
+    }
+
+   
+    delete selectedImageURLs[id];
+
+    setBorderForAllInstances(id, null);
+
+    
+    const wrapper = document.getElementById(`container-image-${id}`)?.parentElement;
+    if (wrapper) wrapper.remove();
+
+  
+    if (typeof updateLikedDislikedVisibility === "function") {
+        updateLikedDislikedVisibility();
+    }
+    }
+
+
+        
+        function addImageToContainer(url, id, containerId) {
+            const container = document.getElementById(containerId);
+            const wrapper = document.createElement("div");
+            wrapper.className = "container-image-wrapper";
+            wrapper.style.position = "relative";
+            wrapper.style.display = "inline-block";
+            wrapper.style.margin = "5px";
+
+            const img = document.createElement("img");
+            img.src = url;
+            img.id = `container-image-${id}`;
+            img.className = "styled-image zoomable";
+            img.onclick = () => img.classList.toggle("zoomed2");
+
+            const closeBtn = document.createElement("span");
+            closeBtn.className = "close-btn";
+            closeBtn.textContent = "×";
+            closeBtn.style.position = "absolute";
+            closeBtn.style.top = "0";
+            closeBtn.style.right = "0";
+            closeBtn.style.cursor = "pointer";
+            closeBtn.style.backgroundColor = "#ffcccc";
+            closeBtn.style.border = "1px solid #ff6666";
+            closeBtn.style.borderRadius = "50%";
+            closeBtn.style.padding = "2px 5px";
+            closeBtn.style.fontSize = "12px";
+            closeBtn.style.zIndex = "10";
+            closeBtn.style.color = "#cc0000";
+            closeBtn.onclick = e => {
+                e.stopPropagation();
+                removeSelectedImage(id, containerId);
+            };
+
+            wrapper.appendChild(img);
+            wrapper.appendChild(closeBtn);
+            container.appendChild(wrapper);
+        }
+
+    
+        function handleThumbsUp(url, id) {
+           
+            if (nonRelevantImages.includes(id)) {
+                removeFromNonRelevant(id);
+                removeImageFromContainer(id, "disliked-images");
+                addPositiveBorder(id);
+            }
+
+            if (!relevantImages.includes(id)) {
+            
+                relevantImages.push(id);
+                relevantImagestemp.push(id);
+                selectedImageURLs[id] = url;
+                addPositiveBorder(id);
+                addImageToContainer(url, id, "liked-images");
+            } else {
+               
+                removeSelectedImage(id, "liked-images");
+            }
+        }
+
+     
+        function handleThumbsDown(url, id) {
+           
             if (relevantImages.includes(id)) {
                 removeFromRelevant(id);
                 removeImageFromContainer(id, "liked-images");
                 addNegativeBorder(id);
             }
-        
-            // Toggle in the Disliked Images container
+
             if (!nonRelevantImages.includes(id)) {
+             
                 nonRelevantImages.push(id);
                 nonRelevantImagestemp.push(id);
                 selectedImageURLs[id] = url;
                 addNegativeBorder(id);
                 addImageToContainer(url, id, "disliked-images");
             } else {
-                nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
-                nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
-                delete selectedImageURLs[id];
-                span.style.border = ""; 
-                removeImageFromContainer(id, "disliked-images");
+              
+                removeSelectedImage(id, "disliked-images");
             }
         }
-        
-        
-        
-        
-        function addImageToContainer(url, id, containerId) {
-            const container = document.getElementById(containerId);
-        
-          
-            const wrapper = document.createElement("div");
-            wrapper.className = "container-image-wrapper";
-            wrapper.style.position = "relative";
-            wrapper.style.display = "inline-block";
-            wrapper.style.margin = "5px";
-        
-           
-            const img = document.createElement("img");
-            img.src = url;
-            img.id = `container-image-${id}`;
-            img.className = "styled-image zoomable"; 
+
+      
+       
+        function removeFromRelevant(id) {
+        relevantImages = relevantImages.filter(i => i !== id);
+        relevantImagestemp = relevantImagestemp.filter(i => i !== id);
+        delete selectedImageURLs[id];
+        setBorderForAllInstances(id, null);
+        updateLikedDislikedVisibility?.();
+        }
+
+        function removeFromNonRelevant(id) {
+        nonRelevantImages = nonRelevantImages.filter(i => i !== id);
+        nonRelevantImagestemp = nonRelevantImagestemp.filter(i => i !== id);
+        delete selectedImageURLs[id];
+        setBorderForAllInstances(id, null);
+        updateLikedDislikedVisibility?.();
+        }
+
             
-            img.onclick = function() {
-                 img.classList.toggle('zoomed2');
-            };
-        
-           
-            const closeBtn = document.createElement("span");
-            closeBtn.className = "close-btn";
-            closeBtn.textContent = "×"; 
-            closeBtn.style.position = "absolute";
-            closeBtn.style.top = "0";
-            closeBtn.style.right = "0";
-            closeBtn.style.cursor = "pointer";
-          
-            closeBtn.style.backgroundColor = "#ffcccc"; 
-            closeBtn.style.border = "1px solid #ff6666";  
-            closeBtn.style.borderRadius = "50%";
-            closeBtn.style.padding = "2px 5px";
-            closeBtn.style.fontSize = "12px";
-            closeBtn.style.zIndex = "10"; 
-            closeBtn.style.color = "#cc0000"; 
-          closeBtn.onclick = function(e) {
-                 e.stopPropagation(); 
-                 removeSelectedImage(id, containerId);
-            };
-        
-            wrapper.appendChild(img);
-            wrapper.appendChild(closeBtn);
-            container.appendChild(wrapper);
-        }
-        function removeSelectedImage(id, containerId) {
-               if (containerId === "liked-images") {
-                 relevantImages = relevantImages.filter(imageId => imageId !== id);
-                 relevantImagestemp = relevantImagestemp.filter(imageId => imageId !== id);
-            } else if (containerId === "disliked-images") {
-                 nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
-                 nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
-            }
-            
-              const mainImageSpan = document.getElementById('image_' + id)?.parentElement;
-            if (mainImageSpan) {
-                 mainImageSpan.style.border = "";
-            }
-             const imgElement = document.getElementById(`container-image-${id}`);
-            if (imgElement && imgElement.parentElement) {
-                 imgElement.parentElement.remove();
-            }
-        }
-        
         function removeImageFromContainer(id, containerId) {
             const container = document.getElementById(containerId);
             const img = document.getElementById(`container-image-${id}`);
@@ -398,50 +542,186 @@
                 container.removeChild(img);
             }
         }
+                
+       
+       
         
 
-        function removeFromRelevant(id) {
-            const span = document.getElementById('image_' + id).parentElement;
-            relevantImages = relevantImages.filter(imageId => imageId !== id);
-            relevantImagestemp = relevantImagestemp.filter(imageId => imageId !== id);
-            delete selectedImageURLs[id];
-            
-            span.classList.remove("fancychecks_positive");
+
+       function saveAndDisplayallMethods() {
            
-        }
-
-        function removeFromNonRelevant(id) {
-            const span = document.getElementById('image_' + id).parentElement;
-            nonRelevantImages = nonRelevantImages.filter(imageId => imageId !== id);
-            nonRelevantImagestemp = nonRelevantImagestemp.filter(imageId => imageId !== id);
-            delete selectedImageURLs[id];
-            span.classList.remove("fancychecks_negative");
-        }
-        function saveAndUpdate() {
-            const algorithmSelect = document.getElementById("algorithm-select");
-            const selectedAlgorithm = algorithmSelect.value.toLowerCase(); // Usa `value` invece di `text`
-        
-             if (!selectedAlgorithm || selectedAlgorithm === "select algorithm") {
-                alert("Please select an algorithm before updating results.");
-                return;
-            }
-        
-             if (!sessionId) {
-                alert("No session ID found. Please perform a search first.");
-                return;
-            }
-        
-             const loadingDiv = document.getElementById("loading");
+   
+            const loadingDiv = document.getElementById("loading");
             loadingDiv.style.display = "block";
-        
-            const timeout = setTimeout(() => {
-                if (loadingDiv.style.display === "block") {
-                    alert("Update is taking longer than expected. Please try again later.");
-                    loadingDiv.style.display = "none";
+
+       
+            document.getElementById("image-container").innerHTML = "";
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = "";
+            resultsDiv.classList.add("hidden");
+            const selectedDiv = document.getElementById("selected-results");
+            selectedDiv.innerHTML = "";
+         
+            const onlyNegatives = (relevantImages.length === 0 && nonRelevantImages.length > 0);
+            if (onlyNegatives) {
+            showAlert(
+                "Compare All: you have selected only negative items. SVM and PicHunter are not compatible with only negatives and will be excluded from the comparison. Polyadic was not originally design to work with only negative feedback, so please be aware that results may be low quality",
+                { variant: "warning", autoHideMs: 15000 }
+            );
+            }
+                       
+            const onlyPositives = (relevantImages.length > 0 && nonRelevantImages.length === 0);
+            if (onlyPositives && !window._svmWarnedOnlyPositivesCompareAll) {
+            showAlert(
+                "You have selected only positive items. In SVM, 10 random negative items will be automatically added for training. Pichunter and Piuchunter-star will show the same results.",
+                { variant: "warning", autoHideMs: 7000 }
+            );
+            window._svmWarnedOnlyPositivesCompareAll = true;
+            }
+
+           
+            fetch('/compare_all_methods', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    relevant_images_ids: relevantImages,
+                    non_relevant_images_ids: nonRelevantImages
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                loadingDiv.style.display = "none";
+                if (data.status !== 'success') {
+                    return alert("Error during comparison.");
                 }
-            }, 10000); 
-        
-          
+                renderAllMethodsComparison(data.comparisons);
+            })
+            .catch(error => {
+                loadingDiv.style.display = "none";
+                console.error('Error:', error);
+
+                showAlert(
+                "SVM does not support only negative feedback. Please select both positive and negative images before updating results.",
+                { variant: "error", autoHideMs: 15000 }
+                );
+
+
+                setTimeout(() => {
+                    alertBox.style.display = "none";
+                }, 15000);
+            });
+        }
+        function renderAllMethodsComparison(comparisons) {
+            const container = document.getElementById("selected-results");
+            container.innerHTML = "";
+            container.classList.remove("hidden");
+            container.style.display = "block";
+
+            const methodOrder = ['rocchio','pichunter','pichunter-star','svm','polyadic-sed','polyadic-msed'];
+
+            
+            const shown = methodOrder.filter(m => comparisons[m]).map(m => HUMAN_ALGO[m] || m);
+            setContentTitle(`Compare All`);
+
+            const grid = document.createElement("div");
+            grid.className = "all-methods-container";
+         
+            renderInitialResultsBox(grid);
+
+            methodOrder.forEach(method => {
+                const res = comparisons[method];
+                if (!res) return;
+                const box = document.createElement("div");
+                box.className = "method-box";
+
+                const title = document.createElement("h2");
+                title.textContent = (HUMAN_ALGO[method] || method).toUpperCase() + ` (${res.time})`;
+                box.appendChild(title);
+
+                const imagesDiv = document.createElement("div");
+                imagesDiv.className = "method-images";
+                res.urls.forEach((url, i) => createImageWithThumbs(imagesDiv, url, res.ids[i]));
+                box.appendChild(imagesDiv);
+
+                grid.appendChild(box);
+            });
+
+            container.appendChild(grid);
+            grid.scrollLeft = 0;
+            container.scrollLeft = 0;
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+
+
+        function updateLikedDislikedVisibility() {
+            const liked = document.getElementById("liked-images");
+            const disliked = document.getElementById("disliked-images");
+
+            const likedContainer = document.getElementById("liked-images-container");
+            const dislikedContainer = document.getElementById("disliked-images-container");
+
+            likedContainer.style.display = liked.children.length > 0 ? "block" : "none";
+            dislikedContainer.style.display = disliked.children.length > 0 ? "block" : "none";
+}
+
+        function saveAndUpdate() {
+            const sel = document.getElementById("algorithm-select");
+            const selectedAlgorithm = sel.value.toLowerCase();
+
+            if (sel.selectedIndex === 0) {
+                showAlert(
+                    "Please select an algorithm before updating results.",
+                    { variant: "warning", autoHideMs: 15000 }
+                );
+                return;
+            }
+
+            setContentTitle(HUMAN_ALGO[selectedAlgorithm] || selectedAlgorithm);
+
+            const loadingDiv = document.getElementById("loading");
+            loadingDiv.style.display = "block";
+
+            // Caso speciale: Compare All
+            if (selectedAlgorithm === "compare all") {
+                saveAndDisplayallMethods();
+                return;
+            }
+
+            // PicHunter non supporta negativi
+            if (selectedAlgorithm === "pichunter" && nonRelevantImages.length > 0) {
+                showAlert(
+                    "PicHunter: negative feedback is not supported. Please select only positive images before updating the results.",
+                    { variant: "warning", autoHideMs: 15000 }
+                );
+                loadingDiv.style.display = "none";
+                return;
+            }
+
+            // SVM con solo positivi
+            if (
+                selectedAlgorithm === "svm" &&
+                relevantImages.length > 0 &&
+                nonRelevantImages.length === 0 &&
+                !svmWarnedOnlyPositives
+            ) {
+                showAlert(
+                    "SVM: you have selected only positive items. 10 random negative items will be automatically added for training.",
+                    { variant: "warning", autoHideMs: 15000 }
+                );
+                svmWarnedOnlyPositives = true;
+            }
+
+            // Polyadic con solo negativi
+            const onlyNegatives = (relevantImages.length === 0 && nonRelevantImages.length > 0);
+            if ((selectedAlgorithm === "polyadic-sed" || selectedAlgorithm === "polyadic-msed") && onlyNegatives) {
+                showAlert(
+                    `You have selected only negative items. This method was not originally designed to work with only negative feedback, so please be aware that results may be of low quality.`,
+                    { variant: "warning", autoHideMs: 15000 }
+                );
+            }
+
+            // Chiamata al backend
             fetch('/save_and_update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -454,33 +734,52 @@
                     session_id: sessionId
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-               
-                loadingDiv.style.display = "none";
-                clearTimeout(timeout);
-        
-                if (data.status === 'success') {
-            
-                    displayUpdatedImages(data);
-        
-                   
-                    const timeElement = document.getElementById("time-of-search");
-                    timeElement.textContent = `${data.selected_algorithm} Time: ${data.total_time}`;
-        
-                    relevantImagestemp = [];
-                    nonRelevantImagestemp = [];
-                } else {
-                    alert("An error occurred while updating results. Please try again.");
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                loadingDiv.style.display = "none";
-                alert("Failed to update results. Please check your connection and try again.");
-            });
+                .then(resp => {
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    return resp.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        displayUpdatedImages(data);
+                        document.getElementById("time-of-search").textContent =
+                            `${data.selected_algorithm} Time: ${data.total_time}`;
+                        relevantImagestemp = [];
+                        nonRelevantImagestemp = [];
+
+                        setContentTitle(HUMAN_ALGO[data.selected_algorithm] || data.selected_algorithm);
+                    } else {
+                        showAlert("Update failed: backend returned an error.", { variant: "error", autoHideMs: 15000 });
+                    }
+                })
+                .catch(err => {
+                    console.error('Update error:', err);
+                    showAlert(
+                        "Error during update. Please check that the algorithm supports your selection of positives/negatives.",
+                        { variant: "error", autoHideMs: 15000 }
+                    );
+                })
+                .finally(() => {
+                    // Nascondi lo spinner SEMPRE
+                    loadingDiv.style.display = "none";
+                });
         }
-        
+
+
+        function setBorderForAllInstances(id, color /* 'green' | 'red' | null */) {
+        const sel = `img[data-img-id="${CSS.escape(String(id))}"]`;
+        document.querySelectorAll(sel).forEach(img => {
+            const span = img.parentElement; 
+            if (!span) return;
+            if (color === 'green') {
+            span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 5px green";
+            } else if (color === 'red') {
+            span.style.boxShadow = "0 0 0 2px white inset, 0 0 0 5px red";
+            } else {
+            span.style.boxShadow = "";
+            }
+        });
+        }
+
         function displayUpdatedImages(data) {
          
             const resultsDiv = document.getElementById("results");
@@ -507,7 +806,8 @@
             selectedDiv.classList.remove("hidden");
      
             document.getElementById("content").scrollTop = 0;
-        
+            setContentTitle(HUMAN_ALGO[data.selected_algorithm] || data.selected_algorithm);
+
            
             setTimeout(() => {
                 window.scrollTo({
@@ -521,10 +821,50 @@
             localStorage.setItem('selectedAlgorithm', algorithm);
         }
 
-        // Function to get the selected algorithm from local storage
+       
         function getSelectedAlgorithm() {
             return localStorage.getItem('selectedAlgorithm');
         }
+        function clearPage() {
+          
+            document.getElementById("query").value = "";
+
+           
+            const algoSelect = document.getElementById("algorithm-select");
+            if (algoSelect) algoSelect.selectedIndex = 0;
+
+           
+            document.getElementById("image-container").innerHTML = "";
+            document.getElementById("results").innerHTML = "";
+            document.getElementById("selected-results").innerHTML = "";
+            document.getElementById("liked-images").innerHTML = "";
+            document.getElementById("disliked-images").innerHTML = "";
+            document.getElementById("time-of-search").textContent = "";
+
+          
+            setContentTitle("");  
+
+            
+            document.getElementById("selected-results").classList.add("hidden");
+
+            relevantImages = [];
+            nonRelevantImages = [];
+            relevantImagestemp = [];
+            nonRelevantImagestemp = [];
+            selectedImageURLs = {};
+            sessionId = null;
+            initialResults = { urls: [], ids: [] };
+
+        
+            document.getElementById("loading").style.display = "none";
+
+         
+            const button = document.getElementById("search-update-button");
+            button.textContent = "Search";
+            button.onclick = handleSearchOrUpdate;
+            hasSearched = false;
+}
+
 
         
     </script>
