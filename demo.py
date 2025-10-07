@@ -79,7 +79,7 @@ score_value_polyquery_sed_log=None
 initial_prob_pichunter = None
 @app.route('/')
 def index():
-    return send_from_directory('static', 'demo.html')
+    return send_from_directory('static', 'demo_copy.html')
 
 display_number=400
 @app.route('/search', methods=['POST'])
@@ -123,11 +123,12 @@ def search(n_display=display_number):
     host = "https://visione.isti.cnr.it"
     textual_mode = "clip-laion"
     max_rank =10000
-    max_shuffle = 10000
+    
     query = json.dumps({"query": [{"textual": query_orig}], "parameters": [{"textualMode": textual_mode, "occur": "and", "simReorder": "false"}]})
    
     
-    results = requests.post(host + '/services/core/search', data={'query': query, 'sortbyvideo': False, 'maxres': max_rank})
+
+    results = requests.post(host + '/services/core/search', data={'query': query, 'sortbyvideo': False, 'maxres': max_rank},  verify=False)
     data = results.json()
     initial_query_emb = np.array(fetch_text_feature(query), dtype=np.float64)
     initial_query_emb = np.squeeze(initial_query_emb).reshape(-1, 1)
@@ -203,151 +204,38 @@ def search(n_display=display_number):
 
     return jsonify({'image_urls': image_urls, 'img_ids': img_ids,'session_id': session_id,})
 @app.route('/save_and_update', methods=['POST'])
+@app.route('/save_and_update', methods=['POST'])
 def save_and_update():
     """Gestisce l'aggiornamento della sessione basato sulle immagini selezionate dall'utente."""
-
-  
     data = request.get_json()
     session_id = data.get('session_id')
 
-    
     if session_id not in sessions:
         return jsonify({'error': 'Session expired or invalid'}), 400
 
-    relevant_image_ids = data.get('relevant_images_ids', [])
-    non_relevant_image_ids = data.get('non_relevant_images_ids', [])
-    relevant_image_ids_temp = data.get('relevant_images_ids_temp', [])
-    non_relevant_image_ids_temp = data.get('non_relevant_images_ids_temp', [])
-
+    # input feedback
+    relevant_image_ids         = data.get('relevant_images_ids', [])
+    non_relevant_image_ids     = data.get('non_relevant_images_ids', [])
+    relevant_image_ids_temp    = data.get('relevant_images_ids_temp', [])
+    non_relevant_image_ids_temp= data.get('non_relevant_images_ids_temp', [])
 
     selected_algorithm = data.get('selected_algorithm', 'rocchio').lower()
 
-
-   
-    data_df = session_data[session_id]["data_df"]
-    
+    # dati di sessione
+    data_df    = session_data[session_id]["data_df"]
     df_display = session_data[session_id]["df_display"]
-    print('shape of df_display:', df_display.shape)
-    
+
+    # shrink display in base a quanto cliccato
     clicked_ids = set(relevant_image_ids_temp + non_relevant_image_ids_temp)
+    cols = list(df_display.columns)
+    max_pos = max([i for i,c in enumerate(cols) if c in clicked_ids] + [-1])
+    df_display = df_display[cols[: max(100, max_pos+1) ]]
 
+    # salva log
+    with open('relevant_images_ids.json', 'w') as f: json.dump({'relevant_images_ids': relevant_image_ids}, f)
+    with open('non_relevant_images_ids.json', 'w') as f: json.dump({'non_relevant_images_ids': non_relevant_image_ids}, f)
 
-    columns_list = list(df_display.columns)
-
-    
-    max_clicked_position = -1 
-    for i, col in enumerate(columns_list):
-        if col in clicked_ids:
-            max_clicked_position = max(max_clicked_position, i)
-   
-    num_columns = max(100, max_clicked_position + 1)
-
-    
-    df_display = df_display[columns_list[:num_columns]]
-
-    with open('relevant_images_ids.json', 'w') as f_relevant:
-        json.dump({'relevant_images_ids': relevant_image_ids}, f_relevant)
-
-    with open('non_relevant_images_ids.json', 'w') as f_non_relevant:
-        json.dump({'non_relevant_images_ids': non_relevant_image_ids}, f_non_relevant)
-
-    #########################################################################
-    #### ROCCHIO
-    #########################################################################
-    if selected_algorithm == 'rocchio':
-        df_display, new_query, time_of_search,  = rocchio_single_step(
-            data_df, df_display, relevant_image_ids, non_relevant_image_ids,
-            alpha=1.2, beta=2.4, gamma=2.6, fun_name="euclidean",
-            initial_query=session_data[session_id]["query_value_rocchio"]
-        )
-        session_data[session_id]["query_value_rocchio"] = new_query
-  
-    #########################################################################
-    #### PICHUNTER STAR
-    ######################################################################### 
-    elif selected_algorithm == 'pichunter-star':
-        df_display, new_prob_values_star, time_of_search= pichunter_single_step_star(
-            data_df, df_display, relevant_image_ids_temp, non_relevant_image_ids_temp,
-            fun_name="softmin", initial_prob=session_data[session_id]["initial_prob_pichunter"],
-            temperature=82.10553
-        )
-        session_data[session_id]["initial_prob_pichunter"] = new_prob_values_star
-    
-    #########################################################################
-    #### PICHUNTER
-    ######################################################################### 
-    elif selected_algorithm == 'pichunter':
-        df_display, new_prob_values, time_of_search = pichunter_single_step_star(
-            data_df, df_display, relevant_image_ids_temp, [],
-            fun_name="softmin", initial_prob=session_data[session_id]["initial_prob_pichunter"],
-            temperature=82.10553
-        )
-        session_data[session_id]["initial_prob_pichunter"] = new_prob_values
-    
-    #########################################################################
-    #### SVM
-    ######################################################################### 
-    elif selected_algorithm == 'svm':
-        df_display, _, time_of_search,  = svm_single_step(
-            data_df, df_display, relevant_image_ids, non_relevant_image_ids,query=session_data[session_id]["query_value_svm"],
-        )
-    
-    #########################################################################
-    #### POLYADIC SED
-    ######################################################################### 
-    elif selected_algorithm == 'polyadic-sed':
-     
-        df_display, new_scores, precomputed_dict_sed, entropy_dict_sed, time_of_search = poly_sed_logscale_single_step(
-        session_data[session_id]["data_df_log"], session_data[session_id]["df_display_log"],
-        relevant_image_ids, non_relevant_image_ids,
-        precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_sed_log_value"],
-        alpha=1, beta=1.6, gamma=1.6,
-        initial_query=session_data[session_id]["query_value_decap"],  # ✅ embedding log della query
-        initial_scores=session_data[session_id]["score_value_polyadic"],  # ✅ rho0
-        entropy_dict=session_data[session_id]["entropy_dict_value"]
-    )
-
-    
-    #########################################################################
-    #### POLYADIC MSED
-    #########################################################################
-    elif selected_algorithm == 'polyadic-msed':
-        df_display, new_scores, precomputed_dict, entropy_dict, time_of_search = poly_msed_logscale_single_step(
-        session_data[session_id]["data_df_log"], 
-        session_data[session_id]["df_display_log"],
-        relevant_image_ids, 
-        non_relevant_image_ids,
-        precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_msed_log_value"],
-        alpha=0.4, 
-        beta=2, 
-        gamma=1.4, 
-        initial_query=session_data[session_id]["query_value_decap"],  # ✅ usa la query logaritmica
-        initial_scores=session_data[session_id]["score_value_polyquery_msed_log"],  # ✅ usa rho0
-        entropy_dict=session_data[session_id]["entropy_dict_value"]
-    )
-
-
-    else:
-        print("Errore: Algoritmo non riconosciuto, viene utilizzato Rocchio come fallback.")
-        df_display, new_query,time_of_search, = rocchio_single_step(
-            data_df, df_display, relevant_image_ids_temp, non_relevant_image_ids_temp,
-            alpha=0.75, beta=1, gamma=0.75, fun_name="euclidean",
-            initial_query=session_data[session_id]["query_value_rocchio"]
-        )
-        session_data[session_id]["query_value_rocchio"] = new_query
-
-    
-    new_img_ids = df_display.columns.tolist()
-    new_image_urls = [f"https://visione.isti.cnr.it/frames/{img_id.split('-')[0]}/{img_id}.png" for img_id in new_img_ids]
-
-    # Log  debug
-    print(f"Non relevant image ids: {non_relevant_image_ids}")
-    print(f"Relevant image ids: {relevant_image_ids}")
-    print(f"Non relevant image ids temp: {non_relevant_image_ids_temp}")
-    print(f"Relevant image ids temp: {relevant_image_ids_temp}")
-    print(f'Time of search: {time_of_search}')
-    print('shape of df_display:', df_display.shape)
-   
+    # PREPARO response_data di base
     response_data = {
         'status': 'success',
         'session_id': session_id,
@@ -356,12 +244,254 @@ def save_and_update():
         'relevant_images_ids_temp': relevant_image_ids_temp,
         'non_relevant_images_ids_temp': non_relevant_image_ids_temp,
         'selected_algorithm': selected_algorithm,
-        'new_image_ids': new_img_ids,
-        'new_image_urls': new_image_urls,
-        'total_time': f"{time_of_search.total_seconds()} seconds"
     }
 
+    # ======================
+    # SWITCH sui metodi
+    # ======================
+    if selected_algorithm == 'rocchio':
+        print()
+        print("Relevant image IDs:", relevant_image_ids)
+        print()
+        df_display, new_query, time_of_search = rocchio_single_step(
+            data_df, df_display,
+            relevant_image_ids, non_relevant_image_ids,
+            alpha=1.2, beta=2.4, gamma=2.6,
+            fun_name="euclidean",
+            initial_query=session_data[session_id]["query_value_rocchio"]
+        )
+        session_data[session_id]["query_value_rocchio"] = new_query
+
+        # aggiungo risultati singolo metodo
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+    elif selected_algorithm == 'pichunter-star':
+        df_display, new_probs, time_of_search = pichunter_single_step_star(
+            data_df, df_display,
+            relevant_image_ids_temp, non_relevant_image_ids_temp,
+            fun_name="softmin",
+            initial_prob=session_data[session_id]["initial_prob_pichunter"],
+            temperature=82.10553
+        )
+        session_data[session_id]["initial_prob_pichunter"] = new_probs
+
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+    elif selected_algorithm == 'pichunter':
+        df_display, new_probs, time_of_search = pichunter_single_step_star(
+            data_df, df_display,
+            relevant_image_ids_temp, [],
+            fun_name="softmin",
+            initial_prob=session_data[session_id]["initial_prob_pichunter"],
+            temperature=82.10553
+        )
+        session_data[session_id]["initial_prob_pichunter"] = new_probs
+
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+    elif selected_algorithm == 'svm':
+        df_display, _, time_of_search = svm_single_step(
+            data_df, df_display,
+            relevant_image_ids, non_relevant_image_ids,
+            query=session_data[session_id]["query_value_svm"]
+        )
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+    elif selected_algorithm == 'polyadic-sed':
+        df_display, _, _, _, time_of_search = poly_sed_logscale_single_step(
+            session_data[session_id]["data_df_log"],
+            session_data[session_id]["df_display_log"],
+            relevant_image_ids, non_relevant_image_ids,
+            precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_sed_log_value"],
+            alpha=1, beta=1.6, gamma=1.6,
+            initial_query=session_data[session_id]["query_value_decap"],
+            initial_scores=session_data[session_id]["score_value_polyadic"],
+            entropy_dict=session_data[session_id]["entropy_dict_value"]
+        )
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+    elif selected_algorithm == 'polyadic-msed':
+        df_display, _, _, _, time_of_search = poly_msed_logscale_single_step(
+            session_data[session_id]["data_df_log"],
+            session_data[session_id]["df_display_log"],
+            relevant_image_ids, non_relevant_image_ids,
+            precomputed_dict_initial=session_data[session_id]["precomputed_dict_polyquery_msed_log_value"],
+            alpha=0.4, beta=2, gamma=1.4,
+            initial_query=session_data[session_id]["query_value_decap"],
+            initial_scores=session_data[session_id]["score_value_polyquery_msed_log"],
+            entropy_dict=session_data[session_id]["entropy_dict_value"]
+        )
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+
+    else:
+        # fallback su Rocchio
+        df_display, new_query, time_of_search = rocchio_single_step(
+            data_df, df_display,
+            relevant_image_ids_temp, non_relevant_image_ids_temp,
+            alpha=0.75, beta=1, gamma=0.75,
+            fun_name="euclidean",
+            initial_query=session_data[session_id]["query_value_rocchio"]
+        )
+        session_data[session_id]["query_value_rocchio"] = new_query
+        new_ids  = df_display.columns.tolist()
+        new_urls = [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in new_ids]
+        response_data.update({
+            'new_image_ids':  new_ids,
+            'new_image_urls': new_urls,
+            'total_time':     f"{time_of_search.total_seconds()} seconds"
+        })
+
+    # restituisco sempre lo stesso oggetto JSON
     return jsonify(response_data)
+from copy import deepcopy
+
+@app.route('/compare_all_methods', methods=['POST'])
+def compare_all_methods():
+    data = request.get_json()
+    sid = data.get('session_id')
+    if sid not in sessions:
+        return jsonify({'error':'Session invalid'}), 400
+
+    rel = data.get('relevant_images_ids', [])
+    nonrel = data.get('non_relevant_images_ids', [])
+
+    # session data
+    data_df    = session_data[sid]["data_df"]
+    df_disp0   = session_data[sid]["df_display"]
+    data_df_log   = session_data[sid]["data_df_log"]
+    df_disp_log   = session_data[sid]["df_display_log"]
+
+    comparisons = {}
+
+    only_negatives = (len(rel) == 0 and len(nonrel) > 0)
+
+    # 1) Rocchio – sempre ok
+    df_tmp = deepcopy(df_disp0)
+    df_new, new_q, t = rocchio_single_step(
+        data_df, df_tmp, rel, nonrel,
+        alpha=1.2, beta=2.4, gamma=2.6,
+        fun_name="euclidean",
+        initial_query=session_data[sid]["query_value_rocchio"]
+    )
+    comparisons['rocchio'] = {
+      'ids':  df_new.columns.tolist(),
+      'urls': [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in df_new.columns],
+      'time': f"{t.total_seconds():.2f}s"
+    }
+
+    # 2) PicHunter – SKIP se only_negatives (richiede positivi)
+    if not only_negatives:
+        df_tmp = deepcopy(df_disp0)
+        df_new, new_p, t = pichunter_single_step_star(
+            data_df, df_tmp, rel, [],  # PicHunter "base": solo positivi
+            fun_name="softmin",
+            initial_prob=session_data[sid]["initial_prob_pichunter"],
+            temperature=82.10553
+        )
+        comparisons['pichunter'] = {
+          'ids':  df_new.columns.tolist(),
+          'urls': [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in df_new.columns],
+          'time': f"{t.total_seconds():.2f}s"
+        }
+
+    # 3) PicHunter-star – OK anche con soli negativi (usa rel+nonrel)
+    df_tmp = deepcopy(df_disp0)
+    df_new, new_ps, t = pichunter_single_step_star(
+        data_df, df_tmp, rel, nonrel,
+        fun_name="softmin",
+        initial_prob=session_data[sid]["initial_prob_pichunter"],
+        temperature=82.10553
+    )
+    comparisons['pichunter-star'] = {
+      'ids':  df_new.columns.tolist(),
+      'urls': [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in df_new.columns],
+      'time': f"{t.total_seconds():.2f}s"
+    }
+
+    # 4) SVM – SKIP se only_negatives (in genere richiede almeno un positivo)
+    if not only_negatives:
+        df_tmp = deepcopy(df_disp0)
+        df_new, _, t = svm_single_step(
+            data_df, df_tmp, rel, nonrel,
+            query=session_data[sid]["query_value_svm"]
+        )
+        comparisons['svm'] = {
+          'ids':  df_new.columns.tolist(),
+          'urls': [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in df_new.columns],
+          'time': f"{t.total_seconds():.2f}s"
+        }
+
+    # 5) Polyadic-SED – sempre ok
+    df_tmp_log = deepcopy(df_disp_log)
+    df_new, _, _, _, t = poly_sed_logscale_single_step(
+        data_df_log, df_tmp_log, rel, nonrel,
+        precomputed_dict_initial=session_data[sid]["precomputed_dict_polyquery_sed_log_value"],
+        alpha=1, beta=1.6, gamma=1.6,
+        initial_query=session_data[sid]["query_value_decap"],
+        initial_scores=session_data[sid]["score_value_polyadic"],
+        entropy_dict=session_data[sid]["entropy_dict_value"]
+    )
+    comparisons['polyadic-sed'] = {
+      'ids': df_new.columns.tolist(),
+      'urls': [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in df_new.columns],
+      'time': f"{t.total_seconds():.2f}s"
+    }
+
+    # 6) Polyadic-MSED – sempre ok
+    df_tmp_log = deepcopy(df_disp_log)
+    df_new, _, _, _, t = poly_msed_logscale_single_step(
+        data_df_log, df_tmp_log, rel, nonrel,
+        precomputed_dict_initial=session_data[sid]["precomputed_dict_polyquery_msed_log_value"],
+        alpha=0.4, beta=2, gamma=1.4,
+        initial_query=session_data[sid]["query_value_decap"],
+        initial_scores=session_data[sid]["score_value_polyquery_msed_log"],
+        entropy_dict=session_data[sid]["entropy_dict_value"]
+    )
+    comparisons['polyadic-msed'] = {
+      'ids': df_new.columns.tolist(),
+      'urls': [f"https://visione.isti.cnr.it/frames/{i.split('-')[0]}/{i}.png" for i in df_new.columns],
+      'time': f"{t.total_seconds():.2f}s"
+    }
+
+    return jsonify({'status':'success','comparisons':comparisons})
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000,debug=True)
